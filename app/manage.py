@@ -185,7 +185,7 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/favourites', methods=['POST', 'GET'])
+@app.route('wellb.herokuapp.com/favourites', methods=['POST', 'GET'])
 def favour():
     # Добавляем блюда в список избранного
     if request.method == 'POST':
