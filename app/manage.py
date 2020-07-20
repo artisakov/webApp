@@ -90,17 +90,18 @@ def news():
     session['username'] = current_user.username
     session['user_id'] = current_user.id
     session['date'] = datetime.datetime.today().date()
-    return render_template("news.html", name=session['username'])
+    return render_template("searching.html")
 
 
 @app.route('/search_page')
 @login_required
 def search_page():
     # Поисковая страница
-    return render_template("search_page.html", name=session['username'])
+    return render_template("searching.html")
 
 
 @app.route('/searchlink/<string:search_string>')
+@login_required
 def searchlink(search_string):
     # Работа бокового меню
     path = os.path.dirname(os.path.abspath(__file__))
@@ -113,11 +114,11 @@ def searchlink(search_string):
     result = cur.fetchall()
     con.close()
 
-    return render_template('search_page.html', result=result,
-                           name=session['username'])
+    return render_template('searching.html', result=result)
 
 
 @app.route('/search', methods=['POST'])
+@login_required
 def search():
     # Основная функция сайта - поиск по базе данных
     if request.method == 'POST':
@@ -186,6 +187,7 @@ def logout():
 
 
 @app.route('/favourites', methods=['POST', 'GET'])
+@login_required
 def favour():
     # Добавляем блюда в список избранного
     if request.method == 'POST':
