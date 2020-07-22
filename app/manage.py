@@ -156,7 +156,7 @@ def login():
             if check_password_hash(user.password, form.password.data):
                 login_user(user, remember=form.remember.data)
                 return redirect(url_for('news'))
-        return '<h1>Неверное имя пользователя или пароль</h1>'
+        return redirect(url_for('login'))
 
     return render_template('login.html', form=form)
 
@@ -173,7 +173,7 @@ def signup():
                         password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
-        return '<h1>Новый пользователь создан</h1>'
+        return redirect(url_for('login'))
 
     return render_template('signup.html', form=form)
 
