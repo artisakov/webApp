@@ -12,6 +12,7 @@ Sign up
         <h2 class="form-signin-heading">Форма регистрации</h2>
         {{ form.hidden_tag() }}
         {{ wtf.form_field(form.username) }}
+        {{ wtf.form_field(form.username1) }}
         {{ wtf.form_field(form.email) }}
         {{ wtf.form_field(form.password) }}
         <button class="btn btn-lg btn-primary btn-block" type="submit">Регистрация</button>

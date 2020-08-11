@@ -49,6 +49,7 @@ mail = Mail(app)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(15), unique=True)
+    username1 = db.Column(db.String(15), unique=True)
     email = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(15))
 
@@ -65,9 +66,12 @@ class RegisterForm(FlaskForm):
     email = StringField('Email', validators=[InputRequired(),
                                              Email(message='Invalid email'),
                                              Length(max=50)])
-    username = StringField('Имя пользователя', validators=[InputRequired(),
+    username = StringField('Никнейм пользователя', validators=[InputRequired(),
                                                            Length(min=5,
                                                                   max=15)])
+    username1 = StringField('ФИО пользователя', validators=[InputRequired(),
+                                                           Length(min=5,
+                                                                  max=15)])                                                                  
     password = PasswordField('Пароль', validators=[InputRequired(),
                                                    Length(min=8, max=15)])
 
@@ -169,7 +173,7 @@ def signup():
     if form.validate_on_submit():
         hashed_password = generate_password_hash(form.password.data,
                                                  method='sha256')
-        new_user = User(username=form.username.data, email=form.email.data,
+        new_user = User(username=form.username.data, username1=form.username1.data, email=form.email.data,
                         password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
@@ -431,8 +435,11 @@ def activity():
     cur.execute("""SELECT date,time,min,type,user_id
                     FROM activity WHERE user_id = ?""", (session['user_id'],))
     Act = cur.fetchall()
+    cur.execute("""SELECT date,time,hour,type,user_id
+                    FROM sleep WHERE user_id = ?""", (session['user_id'],))    
+    Sleep = cur.fetchall()
     con.close()
-    return render_template('activity.html', Act=Act)
+    return render_template('activity.html', Act=Act, Sleep=Sleep)
 
 
 @app.route('/add_activity', methods=['POST'])
@@ -461,8 +468,12 @@ def add_activity():
         db = os.path.join(path, 'diacompanion.db')
         con = sqlite3.connect(db)
         cur = con.cursor()
-        cur.execute("""INSERT INTO activity VALUES(?,?,?,?,?)""",
-                    (session['user_id'], min1, type1, time1, date))
+        if type1 == 'Сон':    
+            cur.execute("""INSERT INTO sleep VALUES(?,?,?,?,?)""",
+                        (session['user_id'], date, time1, min1, 'Сон'))
+        else:
+            cur.execute("""INSERT INTO activity VALUES(?,?,?,?,?)""",
+                        (session['user_id'], min1, type1, time1, date))                            
         con.commit()
         con.close()
     return redirect(url_for('activity'))
@@ -777,13 +788,20 @@ def remove():
         L = request.form.getlist('selected')
         for i in range(len(L)):
             L1 = L[i].split('/')
-
-            cur.execute('''DELETE FROM activity WHERE date = ?
-                        AND time = ?
-                        AND min = ?
-                        AND type = ?
-                        AND user_id = ?''', (L1[0], L1[1], L1[2], L1[3],
-                                             session['user_id']))
+            if L1[3] != 'Сон':
+                cur.execute('''DELETE FROM activity WHERE date = ?
+                            AND time = ?
+                            AND min = ?
+                            AND type = ?
+                            AND user_id = ?''', (L1[0], L1[1], L1[2], L1[3],
+                                                 session['user_id'])) 
+            else:
+                cur.execute('''DELETE FROM sleep WHERE date = ?
+                            AND time = ?
+                            AND hour = ?
+                            AND type = ?
+                            AND user_id = ?''', (L1[0], L1[1], L1[2], L1[3],
+                                                 session['user_id']))                 
         con.commit()
         con.close()
     return redirect(url_for('activity'))
@@ -833,18 +851,14 @@ def email():
                         WHERE user_id =?''', (session['user_id'],))
         L2 = cur.fetchall()
         cur.execute('''SELECT date,type,index_b,index_a FROM favourites
-                       GROUP BY date,type,index_a,index_b''')
+                       WHERE user_id =?
+                       GROUP BY date,type,index_a,index_b''', (session['user_id'],))
         L3 = cur.fetchall()
         cur.execute('''SELECT DISTINCT date FROM
                         favourites WHERE user_id = ?''', (session['user_id'],))
         date = cur.fetchall()
-
-        for d in date:
-            print(d[0])                    
-            cur.execute('''SELECT avg(water), avg(prot), avg(fat) FROM favourites
-                           WHERE date = ?''', d)
-            avg = cur.fetchall()
-            print(avg[0])   
+        cur.execute('''SELECT username1 FROM user WHERE id = ?''', (session['user_id'],))
+        fio = cur.fetchall()
         con.close()      
         # Считаем средний уровень сахара
         c = []
@@ -885,6 +899,7 @@ def email():
                                                'Ниационвый эквивалент',
                                                'Токоферол эквивалент'])
         food_weight = food_weight.drop('День', axis=1)
+
         # Считаем средний уровень микроэлементов
         list_of = ['Масса (в граммах)',
                    'Белки', 'Углеводы', 'Жиры',
@@ -906,6 +921,13 @@ def email():
             exp = pd.to_numeric(food_weight[i])
             mean2.append(exp.mean())
         print('Среднее по дням', mean2)
+
+        # Кривая попытка решить проблему с типом данных
+        for name1 in ['Масса (в граммах)','Белки']:
+           for i in range(len(food_weight[name1])):
+                food_weight[name1][i] = food_weight[name1][i].replace('.',',') + '\t'
+
+
         a = food_weight.groupby(['Дата',
                                  'Тип',
                                  'Уровень сахара до',
@@ -963,8 +985,7 @@ def email():
         writer = pd.ExcelWriter('app\\%s.xlsx' % session["username"],
                                 engine='xlsxwriter',
                                 options={'strings_to_numbers': True,
-                                         'default_date_format': 'dd/mm/yy',
-                                         'nan_inf_to_errors': True})
+                                         'default_date_format': 'dd/mm/yy'})
         a.to_excel(writer, sheet_name='Приемы пищи')
         activity2.to_excel(writer, sheet_name='Физическая активность',
                            startrow=0, startcol=0)
@@ -980,6 +1001,16 @@ def email():
             for cell in row:
                 cell.alignment = cell.alignment.copy(wrapText=True)
                 cell.alignment = cell.alignment.copy(vertical='center')
+
+
+        for b in ['G','H']:
+            for i in range(4,((len(a['Микроэлементы'])))):
+                k=i
+                print(k)
+                print(b)
+                cs = sheet['%s' % b+str(k) ]
+                cs.alignment = cs.alignment.copy(horizontal='left')
+
 
         sheet.column_dimensions['A'].width = 13
         sheet.column_dimensions['B'].width = 13
@@ -1095,29 +1126,81 @@ def email():
         l4 = ws['L4']
         l4.fill = PatternFill("solid", fgColor="FFCC99")
         ws['A2'] = 'Приемы пищи'
-        ws['A1'] = 'Исаков Артём Олегович'
+        ws['A1'] = '%s' % fio[0][0]
         sheet.merge_cells('A1:AF1')
         sheet.merge_cells('A2:AF2')
 
         length2 = str(len(a['Микроэлементы'])+5)
+        length3 = str(len(a['Микроэлементы'])+7)
         ws['A%s' % length2] = 'Срденее за период'
+        ws['A%s' % length3] = 'Срденее по дням'
+        ws['A%s' % length2].border = thin_border
+        ws['A%s' % length3].border = thin_border
         sheet.merge_cells('A%s:B%s' % (length2,length2))
+        sheet.merge_cells('A%s:B%s' % (length3,length3))
         ws['C%s' % length2 ] = mean_index_b
         ws['D%s' % length2 ] = mean_index_a
         i = 0
         for c in ['G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI']:
             print(f'{c}%s' % length2 +' ' +str(mean2[i]))
-            ws[f'{c}%s' % length2] = str(mean2[i])
+            ws[f'{c}%s' % length2] = mean2[i]
             i = i+1
-        # length1 = str(len(activity1['Время'])+3)
-        # for b in ['G','H']:
-        #     for i in range(4,((len(a['Микроэлементы'])+4))):
-        #         k=i
-        #         print(k)
-        #         print(b)
-        #         cs = sheet['%s' % b+str(k) ]
-        #         cs.alignment = Alignment(horizontal='left')
 
+        path = os.path.dirname(os.path.abspath(__file__))
+        db = os.path.join(path, 'diacompanion.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        i=8
+        for d in date:
+            sheet['A%s' % str(len(a['Микроэлементы'])+i)] = d[0]                 
+            cur.execute('''SELECT avg(index_b), avg(index_a), avg(libra), avg(prot), avg(carbo), avg(fat), avg(energy), avg(water), avg(mds), avg(kr),
+                           avg(pv), avg(ok), avg(zola), avg(na), avg(k), avg(ca), avg(mg), avg(p), avg(fe),
+                           avg(a), avg(kar), avg(re), avg(b1), avg(b2), avg(rr), avg(ca), avg(hol), avg(nzhk), avg(ne),
+                           avg(te) FROM favourites
+                           WHERE user_id = ?
+                           AND date = ? ''', (session['user_id'], d[0]))
+            avg = cur.fetchall()
+            sheet['C%s' % str(len(a['Микроэлементы'])+i)] = avg[0][0]
+            sheet['D%s' % str(len(a['Микроэлементы'])+i)] = avg[0][1]
+            sheet['G%s' % str(len(a['Микроэлементы'])+i)] = avg[0][2]
+            sheet['H%s' % str(len(a['Микроэлементы'])+i)] = avg[0][3]
+            sheet['I%s' % str(len(a['Микроэлементы'])+i)] = avg[0][4]
+            sheet['J%s' % str(len(a['Микроэлементы'])+i)] = avg[0][5]
+            sheet['K%s' % str(len(a['Микроэлементы'])+i)] = avg[0][6]
+            sheet['M%s' % str(len(a['Микроэлементы'])+i)] = avg[0][7]
+            sheet['N%s' % str(len(a['Микроэлементы'])+i)] = avg[0][8]
+            sheet['O%s' % str(len(a['Микроэлементы'])+i)] = avg[0][9]
+            sheet['P%s' % str(len(a['Микроэлементы'])+i)] = avg[0][10]
+            sheet['Q%s' % str(len(a['Микроэлементы'])+i)] = avg[0][11]
+            sheet['R%s' % str(len(a['Микроэлементы'])+i)] = avg[0][12]
+            sheet['S%s' % str(len(a['Микроэлементы'])+i)] = avg[0][13]
+            sheet['T%s' % str(len(a['Микроэлементы'])+i)] = avg[0][14]
+            sheet['U%s' % str(len(a['Микроэлементы'])+i)] = avg[0][15]
+            sheet['V%s' % str(len(a['Микроэлементы'])+i)] = avg[0][16]
+            sheet['W%s' % str(len(a['Микроэлементы'])+i)] = avg[0][17]
+            sheet['X%s' % str(len(a['Микроэлементы'])+i)] = avg[0][18]
+            sheet['Y%s' % str(len(a['Микроэлементы'])+i)] = avg[0][19]
+            sheet['Z%s' % str(len(a['Микроэлементы'])+i)] = avg[0][20]
+            sheet['AA%s' % str(len(a['Микроэлементы'])+i)] = avg[0][21]
+            sheet['AB%s' % str(len(a['Микроэлементы'])+i)] = avg[0][22]
+            sheet['AC%s' % str(len(a['Микроэлементы'])+i)] = avg[0][23]
+            sheet['AD%s' % str(len(a['Микроэлементы'])+i)] = avg[0][24]
+            sheet['AE%s' % str(len(a['Микроэлементы'])+i)] = avg[0][25]
+            sheet['AF%s' % str(len(a['Микроэлементы'])+i)] = avg[0][26]
+            sheet['AG%s' % str(len(a['Микроэлементы'])+i)] = avg[0][27]
+            sheet['AH%s' % str(len(a['Микроэлементы'])+i)] = avg[0][28]
+            sheet['AI%s' % str(len(a['Микроэлементы'])+i)] = avg[0][29]
+            i = i + 1     
+        con.close()
+
+        #length1 = str(len(activity1['Время'])+3)
+        #for b in ['G','H']:
+        #     for i in range(4,((len(a['Микроэлементы'])+4))):
+        #        k=i
+        #        print(k)
+        #        print(b)
+        #        cs = sheet['%s' % b+str(k) ]
+        #       cs.alignment = Alignment(horizontal='left')
         wb.save('app\\%s.xlsx' % session["username"])
         wb.close()
 
@@ -1146,7 +1229,7 @@ def email():
             merged_cell.shift(0, 2)
         sheet1.insert_rows(1, 2)
 
-        sheet1['A1'] = 'Исаков Артём Олегович'
+        sheet1['A1'] = '%s' % fio[0][0]
         sheet1['A2'] = 'Физическая активность'
         sheet1['E2'] = 'Сон'
         sheet1.merge_cells('A1:G1')
