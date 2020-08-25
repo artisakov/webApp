@@ -266,14 +266,6 @@ def favour():
         if libra == "":
             libra = "150"
 
-        index_b = request.form['index_b']
-        if index_b == "":
-            index_b = "3.88"
-
-        index_a = request.form['index_a']
-        if index_a == "":
-            index_a = "6.88"
-
         # Достаем все необходимые для диеты параметры
         for i in range(len(L1)):
             cur.execute('''SELECT prot FROM constant_food
@@ -413,10 +405,10 @@ def favour():
                 print(te1[0])
             pustoe = ''
             cur.execute("""INSERT INTO favourites
-                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
                         ?,?,?,?,?,?,?,?,?,?,?,?,?)""", (session['user_id'],
                         week_day,
-                        date, time, typ, L1[i], libra, index_b, index_a,
+                        date, time, typ, L1[i], libra,
                         str(pr[0]), str(car[0]), str(fa[0]), str(energy[0]),
                         pustoe, str(wat[0]), str(md[0]), str(kr1[0]),
                         str(pv1[0]), str(ok1[0]), str(zola1[0]), str(na1[0]),
@@ -829,8 +821,7 @@ def arch():
     con = sqlite3.connect(db)
     cur = con.cursor()
     cur.execute(
-        """SELECT week_day,date,time,food,libra,type,index_b,
-           index_a,prot,carbo,fat,energy
+        """SELECT week_day,date,time,food,libra,type,prot,carbo,fat,energy
            FROM favourites WHERE user_id = ?""", (session['user_id'],))
     L = cur.fetchall()
     con.close()
@@ -850,8 +841,8 @@ def email():
         db = os.path.join(path, 'diacompanion.db')
         con = sqlite3.connect(db)
         cur = con.cursor()
-        cur.execute('''SELECT week_day,date,time,type,
-                    food,libra,index_b,index_a,carbo,prot,
+        cur.execute('''SELECT date,time,type,
+                    food,libra,carbo,prot,
                     fat,energy,micr,water,mds,kr,pv,ok,
                     zola,na,k,ca,mg,p,fe,a,kar,re,b1,b2,
                     rr,c,hol,nzhk,ne,te FROM favourites
@@ -863,10 +854,7 @@ def email():
         cur.execute('''SELECT date,time,hour FROM sleep
                         WHERE user_id =?''', (session['user_id'],))
         L2 = cur.fetchall()
-        cur.execute('''SELECT date,type,index_b,index_a FROM favourites
-                       WHERE user_id =?
-                       GROUP BY date,type,index_a,index_b''', (session['user_id'],))
-        L3 = cur.fetchall()
+
         cur.execute('''SELECT DISTINCT date FROM
                         favourites WHERE user_id = ?''', (session['user_id'],))
         date = cur.fetchall()
@@ -875,10 +863,9 @@ def email():
         con.close()
 
         # Приемы пищи
-        food_weight = pd.DataFrame(L, columns=['День', 'Дата', 'Время', 'Прием пищи',
+        food_weight = pd.DataFrame(L, columns=['Дата', 'Время', 'Прием пищи',
                                                'Продукт', 'Масса, гр',
-                                               'Уровень сахара до',
-                                               'Через 1,5-2 часа', 'Углеводы, гр',
+                                               'Углеводы, гр',
                                                'Белки, гр', 'Жиры, гр',
                                                'ККал',
                                                'Микроэлементы', 'Вода, в г', 'МДС, в г',
@@ -894,10 +881,6 @@ def email():
                                                'НЖК, в г',
                                                'Ниационвый эквивалент, в мг',
                                                'Токоферол эквивалент, в мг'])
-        
-        food_weight = food_weight.drop('День', axis=1)
-        food_weight = food_weight.drop('Уровень сахара до', axis=1)
-        food_weight = food_weight.drop('Через 1,5-2 часа', axis=1)
 
         # Считаем средний уровень микроэлементов
         list_of = ['Масса, гр','Углеводы, гр',
