@@ -21,6 +21,13 @@ from openpyxl.styles import Alignment, Font, Color, colors, PatternFill
 from openpyxl.styles.borders import Border, Side
 import numpy as np
 from numpy import array
+from openpyxl import Workbook
+from openpyxl.styles import Color, PatternFill, Font, Border
+from openpyxl.styles.differential import DifferentialStyle
+from openpyxl.formatting.rule import ColorScaleRule, CellIsRule, FormulaRule
+from openpyxl.formatting.rule import Rule
+from openpyxl.workbook.protection import WorkbookProtection
+from copy import copy
 
 
 app = Flask(__name__)
@@ -447,8 +454,11 @@ def activity():
 def add_activity():
     # Добавляем нагрузку в базу данных
     if request.method == 'POST':
-        td = datetime.datetime.today().date()
-        date = td.strftime("%d.%m.%Y")
+        #td = datetime.datetime.today().date()
+        #date = td.strftime("%d.%m.%Y")
+        date = datetime.datetime.strptime(request.form['calendar'], "%Y-%m-%d")
+        date = date.strftime("%d.%m.%Y")
+
         min1 = request.form['min']
         type1 = request.form['type1']
         if type1 == '1':
@@ -468,14 +478,16 @@ def add_activity():
         db = os.path.join(path, 'diacompanion.db')
         con = sqlite3.connect(db)
         cur = con.cursor()
+
         if type1 == 'Сон':    
-            cur.execute("""INSERT INTO sleep VALUES(?,?,?,?,?)""",
-                        (session['user_id'], date, time1, min1, 'Сон'))
+            cur.execute("""INSERT INTO sleep (user_id,date,time,hour,type) VALUES(?,?,?,?,?)""",
+                        (session['user_id'], date, time1, min1, type1))
         else:
-            cur.execute("""INSERT INTO activity VALUES(?,?,?,?,?)""",
-                        (session['user_id'], min1, type1, time1, date))                            
+            cur.execute("""INSERT INTO activity (user_id,date,time,min,type) VALUES(?,?,?,?,?)""",
+                        (session['user_id'], date, time1, min1, type1,''))                            
         con.commit()
         con.close()
+
     return redirect(url_for('activity'))
 
 
@@ -756,7 +768,7 @@ def lk():
 @app.route('/delete', methods=['POST'])
 @login_required
 def delete():
-    # Удаление данных из дневника за неделю
+    # Удаление данных из дневника приемов пищи за неделю
     if request.method == 'POST':
         path = os.path.dirname(os.path.abspath(__file__))
         db = os.path.join(path, 'diacompanion.db')
@@ -765,6 +777,7 @@ def delete():
         L = request.form.getlist('checked')
         for i in range(len(L)):
             L1 = L[i].split('/')
+            print(L1)
             cur.execute('''DELETE FROM favourites WHERE food = ?
                         AND date = ?
                         AND time = ?
@@ -838,13 +851,13 @@ def email():
         con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute('''SELECT week_day,date,time,type,
-                    food,libra,index_b,index_a,prot,carbo,
+                    food,libra,index_b,index_a,carbo,prot,
                     fat,energy,micr,water,mds,kr,pv,ok,
                     zola,na,k,ca,mg,p,fe,a,kar,re,b1,b2,
                     rr,c,hol,nzhk,ne,te FROM favourites
                     WHERE user_id = ?''', (session['user_id'],))
         L = cur.fetchall()
-        cur.execute('''SELECT date,time,min,type FROM activity
+        cur.execute('''SELECT date,time,min,type,empty FROM activity
                        WHERE user_id = ?''', (session['user_id'],))
         L1 = cur.fetchall()
         cur.execute('''SELECT date,time,hour FROM sleep
@@ -859,124 +872,120 @@ def email():
         date = cur.fetchall()
         cur.execute('''SELECT username1 FROM user WHERE id = ?''', (session['user_id'],))
         fio = cur.fetchall()
-        con.close()      
-        # Считаем средний уровень сахара
-        c = []
-        for i in range(len(L3)):
-            a1 = float(L3[i][3])
-            b = a1*1
-            c.append(b)
-        с1 = pd.Series(c)
-        mean_index_a = с1.mean()
-        print('Уровень сахара после', mean_index_a)
-        d1 = []
-        for i in range(len(L3)):
-            a1 = float(L3[i][2])
-            b = a1*1
-            d1.append(b)
-        d1 = pd.Series(d1)
-        mean_index_b = d1.mean()
-        print('Уровень сахара до', mean_index_b)
+        con.close()
 
         # Приемы пищи
-        food_weight = pd.DataFrame(L, columns=['День', 'Дата', 'Время', 'Тип',
-                                               'Продукт', 'Масса (в граммах)',
+        food_weight = pd.DataFrame(L, columns=['День', 'Дата', 'Время', 'Прием пищи',
+                                               'Продукт', 'Масса, гр',
                                                'Уровень сахара до',
-                                               'Уровень сахара после',
-                                               'Белки', 'Углеводы', 'Жиры',
-                                               'Энергетическая ценность',
-                                               'Микроэлементы', 'Вода', 'МДС',
-                                               'Крахмал', 'Пиш. волокна',
-                                               'Орган. кислота', 'Зола',
-                                               'Натрий', 'Калий', 'Кальций',
-                                               'Магний', 'Фосфор', 'Железо',
-                                               'Ретинол', 'Каротин',
-                                               'Ретиноловый экв.', 'Тиамин',
-                                               'Рибофлавин',
-                                               'Ниацин', 'Аскорбиновая кисл.',
-                                               'Холестерин',
-                                               'НЖК',
-                                               'Ниационвый эквивалент',
-                                               'Токоферол эквивалент'])
+                                               'Через 1,5-2 часа', 'Углеводы, гр',
+                                               'Белки, гр', 'Жиры, гр',
+                                               'ККал',
+                                               'Микроэлементы', 'Вода, в г', 'МДС, в г',
+                                               'Крахмал, в г', 'Пищ вол, в г',
+                                               'Орган кислота, в г', 'Зола, в г',
+                                               'Натрий, в мг', 'Калий, в мг', 'Кальций, в мг',
+                                               'Магний, в мг', 'Фосфор, в мг', 'Железо, в мг',
+                                               'Ретинол, в мкг', 'Каротин, в мкг',
+                                               'Ретин экв, в мкг', 'Тиамин, в мг',
+                                               'Рибофлавин, в мг',
+                                               'Ниацин, в мг', 'Аскорб кисл, в мг',
+                                               'Холестерин, в мг',
+                                               'НЖК, в г',
+                                               'Ниационвый эквивалент, в мг',
+                                               'Токоферол эквивалент, в мг'])
+        
         food_weight = food_weight.drop('День', axis=1)
+        food_weight = food_weight.drop('Уровень сахара до', axis=1)
+        food_weight = food_weight.drop('Через 1,5-2 часа', axis=1)
 
         # Считаем средний уровень микроэлементов
-        list_of = ['Масса (в граммах)',
-                   'Белки', 'Углеводы', 'Жиры',
-                   'Энергетическая ценность',
-                   'Микроэлементы', 'Вода', 'МДС',
-                   'Крахмал', 'Пиш. волокна',
-                   'Орган. кислота', 'Зола',
-                   'Натрий', 'Калий', 'Кальций',
-                   'Магний', 'Фосфор', 'Железо',
-                   'Ретинол', 'Каротин',
-                   'Ретиноловый экв.', 'Тиамин', 'Рибофлавин',
-                   'Ниацин', 'Аскорбиновая кисл.',
-                   'Холестерин', 'НЖК',
-                   'Ниационвый эквивалент',
-                   'Токоферол эквивалент']
+        list_of = ['Масса, гр','Углеводы, гр',
+                    'Белки, гр', 'Жиры, гр',
+                    'ККал', 'Микроэлементы', 'Вода, в г', 'МДС, в г',
+                    'Крахмал, в г', 'Пищ вол, в г',
+                    'Орган кислота, в г', 'Зола, в г',
+                    'Натрий, в мг', 'Калий, в мг', 'Кальций, в мг',
+                    'Магний, в мг', 'Фосфор, в мг', 'Железо, в мг',
+                    'Ретинол, в мкг', 'Каротин, в мкг',
+                    'Ретин экв, в мкг', 'Тиамин, в мг',
+                    'Рибофлавин, в мг',
+                    'Ниацин, в мг', 'Аскорб кисл, в мг',
+                    'Холестерин, в мг',
+                    'НЖК, в г',
+                    'Ниационвый эквивалент, в мг',
+                    'Токоферол эквивалент, в мг']
 
         mean2 = list()
         for i in list_of:
             exp = pd.to_numeric(food_weight[i])
             mean2.append(exp.mean())
-        print('Среднее по дням', mean2)
 
         # Кривая попытка решить проблему с типом данных
-        for name1 in ['Масса (в граммах)','Белки']:
+        for name1 in list_of:
            for i in range(len(food_weight[name1])):
                 food_weight[name1][i] = food_weight[name1][i].replace('.',',') + '\t'
 
 
         a = food_weight.groupby(['Дата',
-                                 'Тип',
-                                 'Уровень сахара до',
-                                 'Уровень сахара после',
-                                 'Время']).agg({
+                                 'Время',
+                                 'Прием пищи']).agg({
                                   "Продукт": lambda tags: '\n'.join(tags),
-                                  "Масса (в граммах)": lambda tags: '\n'.join(tags),
-                                  "Белки": lambda tags: '\n'.join(tags),
-                                  "Углеводы": lambda tags: '\n'.join(tags),
-                                  "Жиры": lambda tags: '\n'.join(tags),
-                                  "Энергетическая ценность": lambda tags: '\n'.join(tags),
+                                  "Масса, гр": lambda tags: '\n'.join(tags),
+                                  "Углеводы, гр": lambda tags: '\n'.join(tags),
+                                  "Белки, гр": lambda tags: '\n'.join(tags),
+                                  "Жиры, гр": lambda tags: '\n'.join(tags),
+                                  "ККал": lambda tags: '\n'.join(tags),
                                   "Микроэлементы": lambda tags: '\n'.join(tags),
-                                  "Вода": lambda tags: '\n'.join(tags),
-                                  "МДС": lambda tags: '\n'.join(tags),
-                                  "Крахмал": lambda tags: '\n'.join(tags),
-                                  "Пиш. волокна": lambda tags: '\n'.join(tags),
-                                  "Орган. кислота": lambda tags: '\n'.join(tags),
-                                  "Зола": lambda tags: '\n'.join(tags),
-                                  "Натрий": lambda tags: '\n'.join(tags),
-                                  "Калий": lambda tags: '\n'.join(tags),
-                                  "Кальций": lambda tags: '\n'.join(tags),
-                                  "Магний": lambda tags: '\n'.join(tags),
-                                  "Фосфор": lambda tags: '\n'.join(tags),
-                                  "Железо": lambda tags: '\n'.join(tags),
-                                  "Ретинол": lambda tags: '\n'.join(tags),
-                                  "Каротин": lambda tags: '\n'.join(tags),
-                                  "Ретиноловый экв.": lambda tags: '\n'.join(tags),
-                                  "Тиамин": lambda tags: '\n'.join(tags),
-                                  "Рибофлавин": lambda tags: '\n'.join(tags),
-                                  "Ниацин": lambda tags: '\n'.join(tags),
-                                  "Аскорбиновая кисл.": lambda tags: '\n'.join(tags),
-                                  "Холестерин": lambda tags: '\n'.join(tags),
-                                  "НЖК": lambda tags: '\n'.join(tags),
-                                  "Ниационвый эквивалент": lambda tags: '\n'.join(tags),
-                                  "Токоферол эквивалент": lambda tags: '\n'.join(tags)})
+                                  "Вода, в г": lambda tags: '\n'.join(tags),
+                                  "МДС, в г": lambda tags: '\n'.join(tags),
+                                  "Крахмал, в г": lambda tags: '\n'.join(tags),
+                                  "Пищ вол, в г": lambda tags: '\n'.join(tags),
+                                  "Орган кислота, в г": lambda tags: '\n'.join(tags),
+                                  "Зола, в г": lambda tags: '\n'.join(tags),
+                                  "Натрий, в мг": lambda tags: '\n'.join(tags),
+                                  "Калий, в мг": lambda tags: '\n'.join(tags),
+                                  "Кальций, в мг": lambda tags: '\n'.join(tags),
+                                  "Магний, в мг": lambda tags: '\n'.join(tags),
+                                  "Фосфор, в мг": lambda tags: '\n'.join(tags),
+                                  "Железо, в мг": lambda tags: '\n'.join(tags),
+                                  "Ретинол, в мкг": lambda tags: '\n'.join(tags),
+                                  "Каротин, в мкг": lambda tags: '\n'.join(tags),
+                                  "Ретин экв, в мкг": lambda tags: '\n'.join(tags),
+                                  "Тиамин, в мг": lambda tags: '\n'.join(tags),
+                                  "Рибофлавин, в мг": lambda tags: '\n'.join(tags),
+                                  "Ниацин, в мг": lambda tags: '\n'.join(tags),
+                                  "Аскорб кисл, в мг": lambda tags: '\n'.join(tags),
+                                  "Холестерин, в мг": lambda tags: '\n'.join(tags),
+                                  "НЖК, в г": lambda tags: '\n'.join(tags),
+                                  "Ниационвый эквивалент, в мг": lambda tags: '\n'.join(tags),
+                                  "Токоферол эквивалент, в мг": lambda tags: '\n'.join(tags)}).reset_index()
+        
+        for i1 in range(len(a['Продукт'])):
+            row = a['Продукт'][i1].split('\n')
+            for i in range(len(row)):
+                row[i] = f'{i+1}. ' + row[i]
+            row = '\n'.join(row)
+            a['Продукт'][i1] = row
 
         # Физическая активность
-        activity1 = pd.DataFrame(L1, columns=['Дата', 'Время', 'Минуты',
-                                              'Тип'])
+        activity1 = pd.DataFrame(L1, columns=['Дата', 'Время', 'Длительность, мин.',
+                                              'Тип нагрузки','Пустое'])
         length1 = str(len(activity1['Время'])+3)
-        activity2 = activity1.groupby(['Дата',
-                                       'Время']).agg({
-                                        'Минуты': lambda tags: '\n'.join(tags),
-                                        'Тип': lambda tags: '\n'.join(tags)})
+        activity2 = activity1.groupby(['Дата']).agg({
+                                        'Время': lambda tags: '\n'.join(tags),
+                                        'Длительность, мин.': lambda tags: '\n'.join(tags),
+                                        'Тип нагрузки': lambda tags: '\n'.join(tags),
+                                        'Пустое': lambda tags: '\n'.join(tags)})
         # Сон
-        sleep1 = pd.DataFrame(L2, columns=['Дата', 'Время', 'Часы'])
+        sleep1 = pd.DataFrame(L2, columns=['Дата', 'Время', 'Длительность, ч.'])
         sleep2 = sleep1.groupby(['Дата'
                                  ]).agg({'Время': lambda tags: '\n'.join(tags),
-                                         'Часы': lambda tags: '\n'.join(tags)})
+                                         'Длительность, ч.': lambda tags: '\n'.join(tags)})
+        luck = pd.merge(left=activity2,
+                        right=sleep2,
+                        on="Дата", how='outer')
+        luck = luck.sort_values(by='Дата')               
 
         # Создаем общий Excel файл
         # можно добавить options={'strings_to_numbers': True} в writer
@@ -986,11 +995,10 @@ def email():
                                 engine='xlsxwriter',
                                 options={'strings_to_numbers': True,
                                          'default_date_format': 'dd/mm/yy'})
-        a.to_excel(writer, sheet_name='Приемы пищи')
-        activity2.to_excel(writer, sheet_name='Физическая активность',
-                           startrow=0, startcol=0)
-        sleep2.to_excel(writer, sheet_name='Физическая активность',
-                        startrow=0, startcol=4)
+        a.to_excel(writer, sheet_name='Приемы пищи', startrow=0, startcol=0)
+
+        luck.to_excel(writer, sheet_name='Физическая активность',
+                           startrow=0, startcol=1)                                            
         writer.close()
 
         # Редактируем оформление приемов пищи
@@ -1003,21 +1011,25 @@ def email():
                 cell.alignment = cell.alignment.copy(vertical='center')
 
 
-        for b in ['G','H']:
-            for i in range(4,((len(a['Микроэлементы'])))):
+        for b in ['F','G','H','I','J','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH']:
+            for i in range(2,((len(a['Микроэлементы'])+2))):
                 k=i
-                print(k)
-                print(b)
                 cs = sheet['%s' % b+str(k) ]
                 cs.alignment = cs.alignment.copy(horizontal='left')
 
+        for c in ['B','C','D']:
+            for i in range(2,((len(a['Микроэлементы'])+2))):        
+                k=i
+                cs = sheet['%s' % c+str(k) ]
+                cs.alignment = cs.alignment.copy(horizontal='center')
 
-        sheet.column_dimensions['A'].width = 13
-        sheet.column_dimensions['B'].width = 13
-        sheet.column_dimensions['C'].width = 20
-        sheet.column_dimensions['D'].width = 25
-        sheet.column_dimensions['E'].width = 13
-        sheet.column_dimensions['F'].width = 50
+
+        sheet.column_dimensions['A'].width = 20
+        sheet.column_dimensions['B'].width = 10
+        sheet.column_dimensions['C'].width = 7
+        sheet.column_dimensions['D'].width = 13
+        sheet.column_dimensions['E'].width = 50
+        sheet.column_dimensions['F'].width = 13
         sheet.column_dimensions['G'].width = 20
         sheet.column_dimensions['H'].width = 20
         sheet.column_dimensions['I'].width = 20
@@ -1025,89 +1037,124 @@ def email():
         sheet.column_dimensions['K'].width = 20
         sheet.column_dimensions['L'].width = 20
         sheet.column_dimensions['M'].width = 20
+        sheet.column_dimensions['N'].width = 20
+        sheet.column_dimensions['O'].width = 20
         sheet.column_dimensions['P'].width = 20
+        sheet.column_dimensions['R'].width = 20
+        sheet.column_dimensions['S'].width = 20
+        sheet.column_dimensions['T'].width = 20
+        sheet.column_dimensions['O'].width = 20
+        sheet.column_dimensions['U'].width = 20
+        sheet.column_dimensions['V'].width = 20
+        sheet.column_dimensions['W'].width = 20
+        sheet.column_dimensions['X'].width = 20
+        sheet.column_dimensions['Y'].width = 20
+        sheet.column_dimensions['Z'].width = 20
         sheet.column_dimensions['Q'].width = 20
         sheet.column_dimensions['AA'].width = 20
+        sheet.column_dimensions['AB'].width = 20
         sheet.column_dimensions['AC'].width = 20
+        sheet.column_dimensions['AD'].width = 20
         sheet.column_dimensions['AE'].width = 20
         sheet.column_dimensions['AF'].width = 20
-        sheet.column_dimensions['AH'].width = 20
+        sheet.column_dimensions['AG'].width = 30
+        sheet.column_dimensions['AH'].width = 30
         sheet.column_dimensions['AI'].width = 20
+        sheet.column_dimensions['AJ'].width = 20
 
-        a1 = ws['A1']
-        a1.fill = PatternFill("solid", fgColor="FFCC99")
+
         b1 = ws['B1']
-        b1.fill = PatternFill("solid", fgColor="FFCC99")
+        b1.fill = PatternFill("solid", fgColor="fafad2")
         c1 = ws['C1']
-        c1.fill = PatternFill("solid", fgColor="FFCC99")
+        c1.fill = PatternFill("solid", fgColor="fafad2")
         d1 = ws['D1']
-        d1.fill = PatternFill("solid", fgColor="FFCC99")
+        d1.fill = PatternFill("solid", fgColor="fafad2")
         e1 = ws['E1']
-        e1.fill = PatternFill("solid", fgColor="FFCC99")
+        e1.fill = PatternFill("solid", fgColor="fafad2")
         f1 = ws['F1']
-        f1.fill = PatternFill("solid", fgColor="FFCC99")
+        f1.fill = PatternFill("solid", fgColor="fafad2")
         g1 = ws['G1']
-        g1.fill = PatternFill("solid", fgColor="FFCC99")
+        g1.fill = PatternFill("solid", fgColor="fafad2")
         h1 = ws['H1']
-        h1.fill = PatternFill("solid", fgColor="FFCC99")
+        h1.fill = PatternFill("solid", fgColor="fafad2")
         i1 = ws['I1']
-        i1.fill = PatternFill("solid", fgColor="FFCC99")
+        i1.fill = PatternFill("solid", fgColor="fafad2")
         j1 = ws['J1']
-        j1.fill = PatternFill("solid", fgColor="FFCC99")
-        k1 = ws['K1']
-        k1.fill = PatternFill("solid", fgColor="FFCC99")
-        l1 = ws['L1']
-        l1.fill = PatternFill("solid", fgColor="FFCC99")
+        j1.fill = PatternFill("solid", fgColor="fafad2")
+
         m1 = ws['M1']
-        m1.fill = PatternFill("solid", fgColor="FFCC99")
+        m1.fill = PatternFill("solid", fgColor="fafad2")
         n1 = ws['N1']
-        n1.fill = PatternFill("solid", fgColor="FFCC99")
+        n1.fill = PatternFill("solid", fgColor="fafad2")
         o1 = ws['O1']
-        o1.fill = PatternFill("solid", fgColor="FFCC99")
+        o1.fill = PatternFill("solid", fgColor="fafad2")
         p1 = ws['P1']
-        p1.fill = PatternFill("solid", fgColor="FFCC99")
+        p1.fill = PatternFill("solid", fgColor="fafad2")
         q1 = ws['Q1']
-        q1.fill = PatternFill("solid", fgColor="FFCC99")
+        q1.fill = PatternFill("solid", fgColor="fafad2")
         r1 = ws['R1']
-        r1.fill = PatternFill("solid", fgColor="FFCC99")
+        r1.fill = PatternFill("solid", fgColor="fafad2")
         s1 = ws['S1']
-        s1.fill = PatternFill("solid", fgColor="FFCC99")
+        s1.fill = PatternFill("solid", fgColor="fafad2")
         t1 = ws['T1']
-        t1.fill = PatternFill("solid", fgColor="FFCC99")
+        t1.fill = PatternFill("solid", fgColor="fafad2")
         u1 = ws['U1']
-        u1.fill = PatternFill("solid", fgColor="FFCC99")
+        u1.fill = PatternFill("solid", fgColor="fafad2")
         v1 = ws['V1']
-        v1.fill = PatternFill("solid", fgColor="FFCC99")
+        v1.fill = PatternFill("solid", fgColor="fafad2")
         w1 = ws['W1']
-        w1.fill = PatternFill("solid", fgColor="FFCC99")
+        w1.fill = PatternFill("solid", fgColor="fafad2")
         x1 = ws['X1']
-        x1.fill = PatternFill("solid", fgColor="FFCC99")
+        x1.fill = PatternFill("solid", fgColor="fafad2")
         y1 = ws['Y1']
-        y1.fill = PatternFill("solid", fgColor="FFCC99")
+        y1.fill = PatternFill("solid", fgColor="fafad2")
         z1 = ws['Z1']
-        z1.fill = PatternFill("solid", fgColor="FFCC99")
+        z1.fill = PatternFill("solid", fgColor="fafad2")
         aa1 = ws['AA1']
-        aa1.fill = PatternFill("solid", fgColor="FFCC99")
+        aa1.fill = PatternFill("solid", fgColor="fafad2")
         ab1 = ws['AB1']
-        ab1.fill = PatternFill("solid", fgColor="FFCC99")
+        ab1.fill = PatternFill("solid", fgColor="fafad2")
         ac1 = ws['AC1']
-        ac1.fill = PatternFill("solid", fgColor="FFCC99")
+        ac1.fill = PatternFill("solid", fgColor="fafad2")
         ad1 = ws['AD1']
-        ad1.fill = PatternFill("solid", fgColor="FFCC99")
+        ad1.fill = PatternFill("solid", fgColor="fafad2")
         ae1 = ws['AE1']
-        ae1.fill = PatternFill("solid", fgColor="FFCC99")
+        ae1.fill = PatternFill("solid", fgColor="fafad2")
         af1 = ws['AF1']
-        af1.fill = PatternFill("solid", fgColor="FFCC99")
+        af1.fill = PatternFill("solid", fgColor="fafad2")
         ah1 = ws['AH1']
-        ah1.fill = PatternFill("solid", fgColor="FFCC99")
-        ai1 = ws['AI1']
-        ai1.fill = PatternFill("solid", fgColor="FFCC99")
+        ah1.fill = PatternFill("solid", fgColor="fafad2")
         ag1 = ws['AG1']
-        ag1.fill = PatternFill("solid", fgColor="FFCC99")
-        thin_border = Border(left=Side(style='thin'),
-                             right=Side(style='thin'),
-                             top=Side(style='thin'),
-                             bottom=Side(style='thin'))
+        ag1.fill = PatternFill("solid", fgColor="fafad2")
+        ws['AH1'].fill = PatternFill("solid", fgColor="fafad2")
+        ws['L1'].fill = PatternFill("solid", fgColor="fafad2")
+
+        i = 1
+        for num in range(1,len(a['Микроэлементы'])+1):                
+            if ws[f'B{num+1}'].value != ws[f'B{num}'].value:
+                if i % 2 == 0:
+                    ws[f'B{num+1}'].fill = PatternFill("solid", fgColor="f0f8ff")
+                    i = i + 1
+                else:
+                    ws[f'B{num+1}'].fill = PatternFill("solid", fgColor="f0fff0")
+                    i = i + 1                     
+            else:
+                ws[f'B{num+1}']._style = ws[f'B{num}']._style
+
+        for i in ["C","D","E","F","G","H","I","J",'L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH']:
+            for num in range(1,len(a['Микроэлементы'])+2):
+                cell = ws[f'B{num}']
+                ws[f'{i}{num}'].fill = PatternFill("solid", fgColor=cell.fill.start_color.index)      
+
+        thin_border = Border(left=Side(style='hair'),
+                             right=Side(style='hair'),
+                             top=Side(style='hair'),
+                             bottom=Side(style='hair'))
+
+        no_border = Border(left=Side(border_style=None),
+                             right=Side(border_style=None),
+                             top=Side(border_style=None),
+                             bottom=Side(border_style=None))                      
 
         for row in ws.iter_rows():
             for cell in row:
@@ -1119,88 +1166,130 @@ def email():
             merged_cell.shift(0, 2)
         ws.insert_rows(1, 2)
 
-        length = str(len(a['Микроэлементы'])+3)
+        # Разделяем основные показатели и микроэлементы
+        ws['K3'].value = ''
+        for i in range(len(a['Микроэлементы'])+3):
+            i1 = str(i+1)
+            ws[f'K{i1}'].border = no_border
+        # Убираем форматирование первого столбца A1 и последнего AI
+        for i in range(len(a['Микроэлементы'])+3):
+            i1 = str(i+1)
+            ws[f'A{i1}'].border = no_border
+            ws[f'A{i1}'].value = ''
+        for i in range(len(a['Микроэлементы'])+3):
+            i1 = str(i+1)
+            ws[f'AI{i1}'].border = no_border                     
 
-        if (len(a['Микроэлементы'])+3) > 3:
-            sheet.merge_cells('L4:L%s' % length)
-        l4 = ws['L4']
-        l4.fill = PatternFill("solid", fgColor="FFCC99")
+        # Оформляем верхушки
         ws['A2'] = 'Приемы пищи'
         ws['A1'] = '%s' % fio[0][0]
-        sheet.merge_cells('A1:AF1')
-        sheet.merge_cells('A2:AF2')
+        sheet.merge_cells('A1:AH1')
+        ws['A2'].border = thin_border
+        ws['A2'].fill = PatternFill("solid", fgColor="fafad2")
+        ws['A2'].font = Font(bold=True)
+        sheet.merge_cells('A2:AH2')
+    
 
         length2 = str(len(a['Микроэлементы'])+5)
-        length3 = str(len(a['Микроэлементы'])+7)
-        ws['A%s' % length2] = 'Срденее за период'
-        ws['A%s' % length3] = 'Срденее по дням'
+        length3 = str(len(a['Микроэлементы'])+6)
+        sheet.merge_cells('C%s:E%s' % (length3,length3))
+        ws['A%s' % length2] = 'Срденее по дням'
+        ws['A%s' % length2].font = Font(bold=True)
+        ws['B%s' % length3] = 'Дата'
+        ws['B%s' % length3].font = Font(bold=True)
         ws['A%s' % length2].border = thin_border
-        ws['A%s' % length3].border = thin_border
-        sheet.merge_cells('A%s:B%s' % (length2,length2))
-        sheet.merge_cells('A%s:B%s' % (length3,length3))
-        ws['C%s' % length2 ] = mean_index_b
-        ws['D%s' % length2 ] = mean_index_a
+        ws['A%s' % length2].fill = PatternFill("solid", fgColor="fafad2")
+        ws['B%s' % length3].border = thin_border
+        ws['B%s' % length3].fill = PatternFill("solid", fgColor="fafad2")
+        ws['C%s' % length3].border = thin_border
+        ws['C%s' % length3].fill = PatternFill("solid", fgColor="fafad2")
+        
+        # Проставляем внизу для средних по дням те же наименования, что и сверху
+        mean21=['Масса, гр','Углеводы, гр',
+                    'Белки, гр', 'Жиры, гр',
+                    'ККал', '', 'Вода, в г', 'МДС, в г',
+                    'Крахмал, в г', 'Пищ вол, в г',
+                    'Орган кислота, в г', 'Зола, в г',
+                    'Натрий, в мг', 'Калий, в мг', 'Кальций, в мг',
+                    'Магний, в мг', 'Фосфор, в мг', 'Железо, в мг',
+                    'Ретинол, в мкг', 'Каротин, в мкг',
+                    'Ретин экв, в мкг', 'Тиамин, в мг',
+                    'Рибофлавин, в мг',
+                    'Ниацин, в мг', 'Аскорб кисл, в мг',
+                    'Холестерин, в мг',
+                    'НЖК, в г',
+                    'Ниационвый эквивалент, в мг',
+                    'Токоферол эквивалент, в мг']
         i = 0
-        for c in ['G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI']:
-            print(f'{c}%s' % length2 +' ' +str(mean2[i]))
-            ws[f'{c}%s' % length2] = mean2[i]
+        for c in ['F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH']:
+            ws[f'{c}%s' % length3] = mean21[i]
+            ws[f'{c}%s' % length3].border = thin_border
+            ws[f'{c}%s' % length3].fill = PatternFill("solid", fgColor="fafad2")
+            ws[f'{c}%s' % length3].font = Font(bold=True)
             i = i+1
 
+        # Убираем закрашенные клетки пустого столбца K    
+        length5 = str(len(a['Микроэлементы'])+8+len(date))
+        ws['K%s' % length3]._style = copy(ws['K%s' % length5]._style)  
+        ws['K%s' % length3].border = no_border
+
+        # Выводим скользящее среднее
         path = os.path.dirname(os.path.abspath(__file__))
         db = os.path.join(path, 'diacompanion.db')
         con = sqlite3.connect(db)
         cur = con.cursor()
-        i=8
+        i=7
         for d in date:
-            sheet['A%s' % str(len(a['Микроэлементы'])+i)] = d[0]                 
-            cur.execute('''SELECT avg(index_b), avg(index_a), avg(libra), avg(prot), avg(carbo), avg(fat), avg(energy), avg(water), avg(mds), avg(kr),
+            sheet['B%s' % str(len(a['Микроэлементы'])+i)] = d[0]                 
+            cur.execute('''SELECT avg(libra), avg(carbo), avg(prot), avg(fat), avg(energy), avg(water), avg(mds), avg(kr),
                            avg(pv), avg(ok), avg(zola), avg(na), avg(k), avg(ca), avg(mg), avg(p), avg(fe),
                            avg(a), avg(kar), avg(re), avg(b1), avg(b2), avg(rr), avg(ca), avg(hol), avg(nzhk), avg(ne),
                            avg(te) FROM favourites
                            WHERE user_id = ?
                            AND date = ? ''', (session['user_id'], d[0]))
             avg = cur.fetchall()
-            sheet['C%s' % str(len(a['Микроэлементы'])+i)] = avg[0][0]
-            sheet['D%s' % str(len(a['Микроэлементы'])+i)] = avg[0][1]
-            sheet['G%s' % str(len(a['Микроэлементы'])+i)] = avg[0][2]
-            sheet['H%s' % str(len(a['Микроэлементы'])+i)] = avg[0][3]
-            sheet['I%s' % str(len(a['Микроэлементы'])+i)] = avg[0][4]
-            sheet['J%s' % str(len(a['Микроэлементы'])+i)] = avg[0][5]
-            sheet['K%s' % str(len(a['Микроэлементы'])+i)] = avg[0][6]
-            sheet['M%s' % str(len(a['Микроэлементы'])+i)] = avg[0][7]
-            sheet['N%s' % str(len(a['Микроэлементы'])+i)] = avg[0][8]
-            sheet['O%s' % str(len(a['Микроэлементы'])+i)] = avg[0][9]
-            sheet['P%s' % str(len(a['Микроэлементы'])+i)] = avg[0][10]
-            sheet['Q%s' % str(len(a['Микроэлементы'])+i)] = avg[0][11]
-            sheet['R%s' % str(len(a['Микроэлементы'])+i)] = avg[0][12]
-            sheet['S%s' % str(len(a['Микроэлементы'])+i)] = avg[0][13]
-            sheet['T%s' % str(len(a['Микроэлементы'])+i)] = avg[0][14]
-            sheet['U%s' % str(len(a['Микроэлементы'])+i)] = avg[0][15]
-            sheet['V%s' % str(len(a['Микроэлементы'])+i)] = avg[0][16]
-            sheet['W%s' % str(len(a['Микроэлементы'])+i)] = avg[0][17]
-            sheet['X%s' % str(len(a['Микроэлементы'])+i)] = avg[0][18]
-            sheet['Y%s' % str(len(a['Микроэлементы'])+i)] = avg[0][19]
-            sheet['Z%s' % str(len(a['Микроэлементы'])+i)] = avg[0][20]
-            sheet['AA%s' % str(len(a['Микроэлементы'])+i)] = avg[0][21]
-            sheet['AB%s' % str(len(a['Микроэлементы'])+i)] = avg[0][22]
-            sheet['AC%s' % str(len(a['Микроэлементы'])+i)] = avg[0][23]
-            sheet['AD%s' % str(len(a['Микроэлементы'])+i)] = avg[0][24]
-            sheet['AE%s' % str(len(a['Микроэлементы'])+i)] = avg[0][25]
-            sheet['AF%s' % str(len(a['Микроэлементы'])+i)] = avg[0][26]
-            sheet['AG%s' % str(len(a['Микроэлементы'])+i)] = avg[0][27]
-            sheet['AH%s' % str(len(a['Микроэлементы'])+i)] = avg[0][28]
-            sheet['AI%s' % str(len(a['Микроэлементы'])+i)] = avg[0][29]
+            sheet['F%s' % str(len(a['Микроэлементы'])+i)] = avg[0][0]
+            sheet['G%s' % str(len(a['Микроэлементы'])+i)] = avg[0][1]
+            sheet['H%s' % str(len(a['Микроэлементы'])+i)] = avg[0][2]
+            sheet['I%s' % str(len(a['Микроэлементы'])+i)] = avg[0][3]
+            sheet['J%s' % str(len(a['Микроэлементы'])+i)] = avg[0][4]
+            sheet['L%s' % str(len(a['Микроэлементы'])+i)] = avg[0][5]
+            sheet['M%s' % str(len(a['Микроэлементы'])+i)] = avg[0][6]
+            sheet['N%s' % str(len(a['Микроэлементы'])+i)] = avg[0][7]
+            sheet['O%s' % str(len(a['Микроэлементы'])+i)] = avg[0][8]
+            sheet['P%s' % str(len(a['Микроэлементы'])+i)] = avg[0][9]
+            sheet['Q%s' % str(len(a['Микроэлементы'])+i)] = avg[0][10]
+            sheet['R%s' % str(len(a['Микроэлементы'])+i)] = avg[0][11]
+            sheet['S%s' % str(len(a['Микроэлементы'])+i)] = avg[0][12]
+            sheet['T%s' % str(len(a['Микроэлементы'])+i)] = avg[0][13]
+            sheet['U%s' % str(len(a['Микроэлементы'])+i)] = avg[0][14]
+            sheet['V%s' % str(len(a['Микроэлементы'])+i)] = avg[0][15]
+            sheet['W%s' % str(len(a['Микроэлементы'])+i)] = avg[0][16]
+            sheet['X%s' % str(len(a['Микроэлементы'])+i)] = avg[0][17]
+            sheet['Y%s' % str(len(a['Микроэлементы'])+i)] = avg[0][18]
+            sheet['Z%s' % str(len(a['Микроэлементы'])+i)] = avg[0][19]
+            sheet['AA%s' % str(len(a['Микроэлементы'])+i)] = avg[0][20]
+            sheet['AB%s' % str(len(a['Микроэлементы'])+i)] = avg[0][21]
+            sheet['AC%s' % str(len(a['Микроэлементы'])+i)] = avg[0][22]
+            sheet['AD%s' % str(len(a['Микроэлементы'])+i)] = avg[0][23]
+            sheet['AE%s' % str(len(a['Микроэлементы'])+i)] = avg[0][24]
+            sheet['AF%s' % str(len(a['Микроэлементы'])+i)] = avg[0][25]
+            sheet['AG%s' % str(len(a['Микроэлементы'])+i)] = avg[0][26]
+            sheet['AH%s' % str(len(a['Микроэлементы'])+i)] = avg[0][27]
             i = i + 1     
         con.close()
 
-        #length1 = str(len(activity1['Время'])+3)
-        #for b in ['G','H']:
-        #     for i in range(4,((len(a['Микроэлементы'])+4))):
-        #        k=i
-        #        print(k)
-        #        print(b)
-        #        cs = sheet['%s' % b+str(k) ]
-        #       cs.alignment = Alignment(horizontal='left')
+        # Выравниваем скользящее среднее по левому краю
+        length31 = len(a['Микроэлементы'])+7
+        length4 = len(a['Микроэлементы'])+7+len(date)
+
+        for a in ['F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH']:
+            for i in range(length31,length4):
+                sheet[f'{a}{i}'].alignment = sheet[f'{a}{i}'].alignment.copy(horizontal = 'left')
+        for a in ['B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH']:
+            sheet[f'{a}3'].alignment = sheet[f'{a}3'].alignment.copy(horizontal = 'left')    
+
+        ws.protection.set_password('test')
         wb.save('app\\%s.xlsx' % session["username"])
         wb.close()
 
@@ -1214,10 +1303,15 @@ def email():
                 cell.alignment = cell.alignment.copy(vertical='center')
                 cell.alignment = cell.alignment.copy(horizontal='center')
 
-        thin_border = Border(left=Side(style='thin'),
-                             right=Side(style='thin'),
-                             top=Side(style='thin'),
-                             bottom=Side(style='thin'))
+        thin_border = Border(left=Side(style='hair'),
+                             right=Side(style='hair'),
+                             top=Side(style='hair'),
+                             bottom=Side(style='hair'))
+
+        no_border = Border(left=Side(border_style=None),
+                             right=Side(border_style=None),
+                             top=Side(border_style=None),
+                             bottom=Side(border_style=None))                                      
 
         for row in sheet1.iter_rows():
             for cell in row:
@@ -1231,10 +1325,8 @@ def email():
 
         sheet1['A1'] = '%s' % fio[0][0]
         sheet1['A2'] = 'Физическая активность'
-        sheet1['E2'] = 'Сон'
-        sheet1.merge_cells('A1:G1')
-        sheet1.merge_cells('A2:D2')
-        sheet1.merge_cells('E2:G2')
+        sheet1['G2'] = 'Сон'
+        sheet1.merge_cells('A1:H1')
 
         for row in sheet1['D4:D%s' % length1]:
             for cell in row:
@@ -1242,28 +1334,47 @@ def email():
                 cell.alignment = cell.alignment.copy(vertical='top')
                 cell.alignment = cell.alignment.copy(horizontal='left')
 
-        sheet1.column_dimensions['A'].width = 13
+        sheet1.column_dimensions['A'].width = 25
         sheet1.column_dimensions['B'].width = 13
         sheet1.column_dimensions['C'].width = 13
         sheet1.column_dimensions['D'].width = 20
         sheet1.column_dimensions['E'].width = 13
         sheet1.column_dimensions['F'].width = 13
         sheet1.column_dimensions['G'].width = 13
-        a1 = sheet1['A3']
-        a1.fill = PatternFill("solid", fgColor="FFCC99")
+        sheet1.column_dimensions['H'].width = 20
+               
         b1 = sheet1['B3']
-        b1.fill = PatternFill("solid", fgColor="FFCC99")
+        b1.fill = PatternFill("solid", fgColor="fafad2")
         c1 = sheet1['C3']
-        c1.fill = PatternFill("solid", fgColor="FFCC99")
+        c1.fill = PatternFill("solid", fgColor="fafad2")
         d1 = sheet1['D3']
-        d1.fill = PatternFill("solid", fgColor="FFCC99")
+        d1.fill = PatternFill("solid", fgColor="fafad2")
         e1 = sheet1['E3']
-        e1.fill = PatternFill("solid", fgColor="FFCC99")
-        f1 = sheet1['F3']
-        f1.fill = PatternFill("solid", fgColor="FFCC99")
-        g1 = sheet1['G3']
-        g1.fill = PatternFill("solid", fgColor="FFCC99")
+        e1.fill = PatternFill("solid", fgColor="fafad2")
 
+        g1 = sheet1['G3']
+        g1.fill = PatternFill("solid", fgColor="fafad2")
+        sheet1['H3'].fill = PatternFill("solid", fgColor="fafad2")
+
+        # Разделяем физическую нагрузку и сон, также убираем форматирование с первого столбца A1
+        # убираем мелкие дефекты
+        sheet1['F3'].value = ''
+        sheet1['C3'].value = 'Время'
+        sheet1['G3'].value = 'Время'
+        for i in range(10):
+            i1 = str(i+1)
+            sheet1[f'F{i1}'].border = no_border
+            
+        for i in range(10):
+            i1 = str(i+1)
+            sheet1[f'A{i1}'].border = no_border
+
+        sheet1['A2'].fill = PatternFill("solid", fgColor="fafad2")
+        sheet1['G2'].fill = PatternFill("solid", fgColor="fafad2")
+        sheet1['A2'].border = thin_border
+        sheet1['G2'].border = thin_border 
+
+        sheet1.protection.set_password('test')
         wb.save('app\\%s.xlsx' % session["username"])
         wb.close()
         # Отправляем по почте

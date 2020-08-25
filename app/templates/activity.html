@@ -38,6 +38,12 @@
 
     <div class="container mt-5">
         <form id='add' method="POST" action="/add_activity">
+            <div class="input-group mt-3 mb-3">
+                <div class="input-group-prepend">
+                    <label class="input-group-text" for="calendar">Введите дату</label>
+                </div>
+                <input class="form-control" type="date" name="calendar" id="calendar">
+            </div>
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
                     <label id='timer1' class="input-group-text" for="timer" style='width: 73.6px;'>Время</label>
