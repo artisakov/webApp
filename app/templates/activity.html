@@ -37,7 +37,7 @@
     </header>
 
     <div class="container mt-5">
-        <form id='add' method="POST" action="/add_activity">
+        <form id='add' method="POST" action="/add_activity" style='max-width: 320px;'>
             <div class="input-group mt-3 mb-3">
                 <div class="input-group-prepend">
                     <label class="input-group-text" for="calendar">Введите дату</label>
@@ -48,13 +48,13 @@
                 <div class="input-group-prepend">
                     <label id='timer1' class="input-group-text" for="timer" style='width: 73.6px;'>Время</label>
                 </div>
-                <input type="time" name="timer" value="" id="timer">
+                <input class='form-control' type="time" name="timer" value="" id="timer">
             </div>
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
                     <label class="input-group-text" for="inputGroupSelect01">Занятие</label>
                 </div>
-                <select class="custom-select-sm-6" id="inputGroupSelect01" name='type1'>
+                <select class="custom-select" id="inputGroupSelect01" name='type1'>
                     <option selected value="1">Ходьба</option>
                     <option value="2">Зарядка</option>
                     <option value="3">Спорт</option>
@@ -67,13 +67,13 @@
                 <div class="input-group-prepend">
                     <label class="input-group-text" for="min" id='measure1'>Кол-во мин.</label>
                 </div>
-                <input type="number" name="min" value="" id="min" style="width: 6rem;">
+                <input class='form-control' type="number" name="min" value="" id="min" style="width: 6rem;">
             </div>
             <button form="add" type="submit" class="btn btn-outline-primary">Сохранить</button>
             <button form="remove" type="submit" class="btn btn-outline-primary ml-3">Удалить</button>
         </form>
-        <div class="table-responsive mt-3">
-            <form id='remove' method="POST" action="/remove">
+        <form id='remove' method="POST" action="/remove">
+            <div class="table-responsive mt-3">
                 <table class="table table-striped table-bordered table-hover">
                     <thead class="thead-dark">
                         <tr>
@@ -87,8 +87,8 @@
                         {% for row in Act %}
                         <tr>
                             <td style='white-space:nowrap;'><input id="{{row[3]}}" name="selected" class="checkbox"
-                                style="margin-right: 0.5rem;" type="checkbox"
-                                value="{{row[0]}}/{{row[1]}}/{{row[2]}}/{{row[3]}}">{{row[0]}}</td>
+                                    style="margin-right: 0.5rem;" type="checkbox"
+                                    value="{{row[0]}}/{{row[1]}}/{{row[2]}}/{{row[3]}}">{{row[0]}}</td>
                             <td>{{row[1]}}</td>
                             <td>{{row[2]}}</td>
                             <td>{{row[3]}}</td>
@@ -96,6 +96,8 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            <div class="table-responsive mt-3">
                 <table class="table table-striped table-bordered table-hover">
                     <thead class="thead-dark">
                         <tr>
@@ -108,16 +110,18 @@
                         {% for row in Sleep %}
                         <tr>
                             <td style='white-space:nowrap;'><input id="{{row[3]}}" name="selected" class="checkbox"
-                                style="margin-right: 0.5rem;" type="checkbox"
-                                value="{{row[0]}}/{{row[1]}}/{{row[2]}}/{{row[3]}}">{{row[0]}}</td>
+                                    style="margin-right: 0.5rem;" type="checkbox"
+                                    value="{{row[0]}}/{{row[1]}}/{{row[2]}}/{{row[3]}}">{{row[0]}}</td>
                             <td>{{row[1]}}</td>
                             <td>{{row[2]}}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            </form>
-        </div>
+
+            </div>
+        </form>
+    </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
