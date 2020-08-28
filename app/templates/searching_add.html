@@ -67,30 +67,6 @@
     <form method='POST' action='/favourites'>
         <div class="container mt-5 mb-5" id='pole' style='display: flex; flex-direction: row;'>
             <div class="container" style="max-width: 320px;">
-                <div class="input-group mt-3 mb-3">
-                    <div class="input-group-prepend">
-                        <label class="input-group-text" for="calendar">Введите дату</label>
-                    </div>
-                    <input class="form-control" type="date" name="calendar" id="calendar">
-                </div>
-                <div class="input-group mb-3">
-                    <div class="input-group-prepend">
-                        <label id='timer1' class="input-group-text" for="timer" style='width: 73.6px;'>Время</label>
-                    </div>
-                    <input class="form-control" type="time" name="timer" value="" id="timer">
-                </div>
-                <div class="input-group">
-                    <div class="input-group-prepend">
-                        <label class="input-group-text">Укажите прием пищи</label>
-                    </div>
-                    <select class="custom-select" name='food_type' id="selector">
-                        <option>Авто</option>
-                        <option>Завтрак</option>
-                        <option>Обед</option>
-                        <option>Ужин</option>
-                        <option>Перекус</option>
-                    </select>
-                </div>
                 <div class="input-group mt-3">
                     <div class="input-group-prepend">
                         <label class="input-group-text">Вес (в граммах)</label>
@@ -98,13 +74,13 @@
                     <input class="form-control" type="number" name="libra" value="" id="libra">
                 </div>
                 <button type="submit" class="btn btn-outline-primary mt-3" id='btn_add' name='btn_add'>Добавить в
-                    избранное</button>
+                список</button>
             </div>
             <div class='container mt-3' id='bluda'
                 style="border-radius: 0.5rem; max-width: 500px;">
                 {% for row in result %}
                 <div class="form-check pl-0">
-                    <input type="checkbox" class="check" name="row" id="{{row[1]}}" value="{{row[0]}}">
+                    <input type="radio" class="check" name="row" id="{{row[1]}}" value="{{row[0]}}">
                     {{ row[0] }}<br>
                 </div>
                 {% endfor %}

@@ -7,8 +7,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField
 from wtforms.validators import InputRequired, Length, Email
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required
-from flask_login import logout_user, current_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+#from flask_login import 
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 import time
@@ -17,15 +17,15 @@ import pandas as pd
 import xlsxwriter
 import openpyxl
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, Color, colors, PatternFill
+from openpyxl.styles import Alignment, Font, Color, colors, PatternFill, Border
 from openpyxl.styles.borders import Border, Side
 import numpy as np
 from numpy import array
-from openpyxl import Workbook
-from openpyxl.styles import Color, PatternFill, Font, Border
+#from openpyxl import Workbook
+#from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.styles.differential import DifferentialStyle
-from openpyxl.formatting.rule import ColorScaleRule, CellIsRule, FormulaRule
-from openpyxl.formatting.rule import Rule
+from openpyxl.formatting.rule import ColorScaleRule, CellIsRule, FormulaRule, Rule
+#from openpyxl.formatting.rule import Rule
 from openpyxl.workbook.protection import WorkbookProtection
 from copy import copy
 
@@ -101,7 +101,13 @@ def news():
     session['username'] = current_user.username
     session['user_id'] = current_user.id
     session['date'] = datetime.datetime.today().date()
-    return render_template("searching.html")
+    path = os.path.dirname(os.path.abspath(__file__))
+    db = os.path.join(path, 'diacompanion.db')
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    cur.execute("""SELECT food,libra FROM basket WHERE user_id = ?""",(session['user_id'],))
+    result = cur.fetchall()
+    return render_template("searching.html", result=result)
 
 
 @app.route('/search_page')
@@ -125,7 +131,7 @@ def searchlink(search_string):
     result = cur.fetchall()
     con.close()
 
-    return render_template('searching.html', result=result)
+    return render_template('searching_add.html', result=result)
 
 
 @app.route('/search', methods=['POST'])
@@ -200,10 +206,31 @@ def logout():
 @app.route('/favourites', methods=['POST', 'GET'])
 @login_required
 def favour():
-    # Добавляем блюда в список избранного
+    # Добавляем блюда в список
     if request.method == 'POST':
 
         L1 = request.form.getlist('row')
+        libra = request.form['libra']
+
+        path = os.path.dirname(os.path.abspath(__file__))
+        db = os.path.join(path, 'diacompanion.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+
+        for i in range(len(L1)):
+            cur.execute("""INSERT INTO basket
+                           VALUES(?,?,?)""", (session['user_id'], L1[i], libra))
+            con.commit()
+        con.close()
+
+    return redirect(url_for('news'))
+
+@app.route('/favourites_add', methods=['POST', 'GET'])
+@login_required
+def favour_add():
+    # Добавляем блюда в основную базу данных и стираем временный список basket 
+    if request.method == 'POST':
+
         brf1 = datetime.time(7, 0)
         brf2 = datetime.time(11, 30)
         obed1 = datetime.time(12, 0)
@@ -211,22 +238,6 @@ def favour():
         ujin1 = datetime.time(18, 0)
         ujin2 = datetime.time(22, 0)
         now = datetime.datetime.now().time()
-
-        typ = request.form['food_type']
-        if typ == "Авто":
-            if now < brf1 and now > brf2:
-                typ = "Завтрак"
-            elif now < obed2 and now > obed1:
-                typ = "Обед"
-            elif now < ujin2 and now > ujin1:
-                typ = "Ужин"
-            else:
-                typ = "Перекус"
-
-        path = os.path.dirname(os.path.abspath(__file__))
-        db = os.path.join(path, 'diacompanion.db')
-        con = sqlite3.connect(db)
-        cur = con.cursor()
 
         time = request.form['timer']
         if time == "":
@@ -261,93 +272,111 @@ def favour():
             week_day = 'Суббота'
         else:
             week_day = 'Воскресенье'
+        typ = request.form['food_type']
+        if typ == "Авто":
+            if now < brf1 and now > brf2:
+                typ = "Завтрак"
+            elif now < obed2 and now > obed1:
+                typ = "Обед"
+            elif now < ujin2 and now > ujin1:
+                typ = "Ужин"
+            else:
+                typ = "Перекус"
 
-        libra = request.form['libra']
-        if libra == "":
-            libra = "150"
+        path = os.path.dirname(os.path.abspath(__file__))
+        db = os.path.join(path, 'diacompanion.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
 
-        # Достаем все необходимые для диеты параметры
+       # Достаем названия и граммы из временно созданной корзины basket 
+        cur.execute("""SELECT food FROM basket WHERE user_id = ?""",(session['user_id'],))
+        L1 = cur.fetchall()
+
+        cur.execute("""SELECT libra FROM basket WHERE user_id = ?""",(session['user_id'],))
+        libra = cur.fetchall()
+
+       # Достаем все необходимые для диеты параметры
         for i in range(len(L1)):
             cur.execute('''SELECT prot FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             prot = cur.fetchall()
             cur.execute('''SELECT carbo FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             carbo = cur.fetchall()
             cur.execute('''SELECT fat FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             fat = cur.fetchall()
             cur.execute('''SELECT ec FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             ec = cur.fetchall()
             cur.execute('''SELECT water FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             water = cur.fetchall()
             cur.execute('''SELECT mds FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             mds = cur.fetchall()
             cur.execute('''SELECT kr FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             kr = cur.fetchall()
             cur.execute('''SELECT pv FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             pv = cur.fetchall()
             cur.execute('''SELECT ok FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             ok = cur.fetchall()
             cur.execute('''SELECT zola FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             zola = cur.fetchall()
             cur.execute('''SELECT na FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             na = cur.fetchall()
             cur.execute('''SELECT k FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             k = cur.fetchall()
             cur.execute('''SELECT ca FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             ca = cur.fetchall()
             cur.execute('''SELECT mg FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             mg = cur.fetchall()
             cur.execute('''SELECT p FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             p = cur.fetchall()
             cur.execute('''SELECT fe FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             fe = cur.fetchall()
             cur.execute('''SELECT a FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             a = cur.fetchall()
             cur.execute('''SELECT kar FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             kar = cur.fetchall()
             cur.execute('''SELECT re FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             re = cur.fetchall()
             cur.execute('''SELECT b1 FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             b1 = cur.fetchall()
             cur.execute('''SELECT b2 FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             b2 = cur.fetchall()
             cur.execute('''SELECT rr FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             rr = cur.fetchall()
             cur.execute('''SELECT c FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             c = cur.fetchall()
             cur.execute('''SELECT hol FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             hol = cur.fetchall()
             cur.execute('''SELECT nzhk FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             nzhk = cur.fetchall()
             cur.execute('''SELECT ne FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             ne = cur.fetchall()
             cur.execute('''SELECT te FROM constant_food
-                        WHERE name = ?''', (L1[i],))
+                        WHERE name = ?''', (L1[i][0],))
             te = cur.fetchall()
             for pr in prot:
                 print(pr[0])
@@ -408,7 +437,7 @@ def favour():
                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
                         ?,?,?,?,?,?,?,?,?,?,?,?,?)""", (session['user_id'],
                         week_day,
-                        date, time, typ, L1[i], libra,
+                        date, time, typ, L1[i][0], libra[i][0],
                         str(pr[0]), str(car[0]), str(fa[0]), str(energy[0]),
                         pustoe, str(wat[0]), str(md[0]), str(kr1[0]),
                         str(pv1[0]), str(ok1[0]), str(zola1[0]), str(na1[0]),
@@ -418,8 +447,10 @@ def favour():
                         str(c1[0]), str(hol1[0]), str(nzhk1[0]),
                         str(ne1[0]), str(te1[0])))
             con.commit()
+        
+        cur.execute("""DELETE FROM basket WHERE user_id = ?""",(session['user_id'],))
+        con.commit()
         con.close()
-
     return redirect(url_for('news'))
 
 
