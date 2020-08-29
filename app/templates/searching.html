@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="shortcut icon" href="#" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="//cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
     <style type='text/css'>
@@ -66,6 +67,11 @@
                         <a class="nav-link" href="{{ url_for('logout') }}">Выйти</a>
                     </li>
                 </ul>
+                <form class="form-inline my-2 my-lg-0" action="/search" method="POST">
+                    <input class="form-control mr-sm-2" type="search" placeholder="Поиск в базе" aria-label="Search"
+                        name="input_query" required>
+                    <button class="btn btn-success my-2 my-sm-0" type="submit">Отправить</button>
+                </form>
             </div>
         </nav>
     </header>
@@ -108,8 +114,8 @@
                     {{ row[0] }}, {{row[1]}} г.<br>
                 </div>
                 {% endfor %}
-                <button  type='submit' class="btn btn-outline-danger mt-3" id='btn_del'
-                    name='btn_del' style='display: none;' formaction="/favourites_dell">Удалить ошибочное</button>
+                <button type='submit' class="btn btn-outline-danger mt-3" id='btn_del' name='btn_del'
+                    style='display: none;' formaction="/favourites_dell">Удалить ошибочное</button>
             </div>
 
         </div>
@@ -133,10 +139,6 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
         integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
         crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
-        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous">
-        </script>
 
     <script type='text/javascript'>
         $('input[type=checkbox]').click(function (event) {

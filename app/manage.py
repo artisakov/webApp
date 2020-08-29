@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, make_response
 from flask_mail import Mail, Message
 import sqlite3
 import os
@@ -8,7 +8,6 @@ from wtforms import StringField, PasswordField, BooleanField
 from wtforms.validators import InputRequired, Length, Email
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-#from flask_login import 
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 import time
@@ -21,11 +20,8 @@ from openpyxl.styles import Alignment, Font, Color, colors, PatternFill, Border
 from openpyxl.styles.borders import Border, Side
 import numpy as np
 from numpy import array
-#from openpyxl import Workbook
-#from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.styles.differential import DifferentialStyle
 from openpyxl.formatting.rule import ColorScaleRule, CellIsRule, FormulaRule, Rule
-#from openpyxl.formatting.rule import Rule
 from openpyxl.workbook.protection import WorkbookProtection
 from copy import copy
 
@@ -45,6 +41,8 @@ app.config['MAIL_DEFAULT_SENDER'] = ('Еженедельник', 'dnewnike@yande
 app.config['MAIL_MAX_EMAILS'] = None
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_ASCII_ATTACHMENTS'] = False
+app.config['SESSION_COOKIE_SAMESITE'] = "Lax"
+
 Bootstrap(app)
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -107,6 +105,7 @@ def news():
     cur = con.cursor()
     cur.execute("""SELECT food,libra FROM basket WHERE user_id = ?""",(session['user_id'],))
     result = cur.fetchall()
+
     return render_template("searching.html", result=result)
 
 
@@ -158,8 +157,7 @@ def search():
                         GROUP BY name''', ('%{}%'.format(search_string),))
             result = cur.fetchall()
         con.close()
-        return render_template('search_page.html', result=result,
-                               name=session['username'])
+        return render_template('searching_add.html', result=result)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -538,7 +536,7 @@ def add_activity():
                         (session['user_id'], date, time1, min1, type1))
         else:
             cur.execute("""INSERT INTO activity (user_id,date,time,min,type) VALUES(?,?,?,?,?)""",
-                        (session['user_id'], date, time1, min1, type1,''))                            
+                        (session['user_id'], date, time1, min1, type1))                            
         con.commit()
         con.close()
 
