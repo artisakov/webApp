@@ -69,7 +69,8 @@
             </div>
         </nav>
     </header>
-    <form method='POST' action='/favourites_add'>
+
+    <form method='POST' action='/favourites_add' id='favourites_add'>
         <div class="container mt-5 mb-5" id='pole' style='display: flex; flex-direction: row;'>
             <div class="container" style="max-width: 320px;">
                 <div class="input-group mt-3 mb-3">
@@ -96,7 +97,8 @@
                         <option>Перекус</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-outline-primary mt-3" id='btn_add' name='btn_add'>Записать в
+                <button form='favourites_add' type="submit" class="btn btn-outline-primary mt-3" id='btn_add'
+                    name='btn_add'>Записать в
                     базу</button>
             </div>
             <div class='container mt-3' id='bluda' style="border-radius: 0.5rem; max-width: 500px;">
@@ -106,11 +108,13 @@
                     {{ row[0] }}, {{row[1]}} г.<br>
                 </div>
                 {% endfor %}
-                <button type='submit' class="btn btn-outline-danger mt-3" id='btn_del' name='btn_del'
-                    style='display: none;'>Удалить ошибочное</button>
+                <button  type='submit' class="btn btn-outline-danger mt-3" id='btn_del'
+                    name='btn_del' style='display: none;' formaction="/favourites_dell">Удалить ошибочное</button>
             </div>
+
         </div>
     </form>
+
 
     <script type="text/javascript">
         setInterval(function () {

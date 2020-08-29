@@ -199,6 +199,13 @@ def signup():
 @login_required
 def logout():
     # Выход из сети
+    path = os.path.dirname(os.path.abspath(__file__))
+    db = os.path.join(path, 'diacompanion.db')
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    cur.execute("""DELETE FROM basket WHERE user_id = ?""",(session['user_id'],))
+    con.commit()
+    con.close()
     logout_user()
     return redirect(url_for('login'))
 
@@ -224,6 +231,30 @@ def favour():
         con.close()
 
     return redirect(url_for('news'))
+
+
+@app.route('/favourites_dell', methods=['POST','GET'])
+@login_required
+def favour_dell():
+    if request.method == 'POST':
+        flist = request.form.getlist('row')
+        food = []
+        libra = []
+        for i in range(len(flist)):
+            flist[i] = flist[i].split('\\\\')
+            food.append(flist[i][0])
+            libra.append(flist[i][1])
+  
+        for i in range(len(food)):
+            path = os.path.dirname(os.path.abspath(__file__))
+            db = os.path.join(path, 'diacompanion.db')
+            con = sqlite3.connect(db)
+            cur = con.cursor()
+            cur.execute("""DELETE FROM basket WHERE user_id = ? AND food = ? AND libra = ?""",(session['user_id'], food[i], libra[i]))
+            con.commit()
+            con.close()
+    return redirect(url_for('news'))
+
 
 @app.route('/favourites_add', methods=['POST', 'GET'])
 @login_required
