@@ -241,7 +241,7 @@ def favour_dell():
         food = []
         libra = []
         for i in range(len(flist)):
-            flist[i] = flist[i].split('\\\\')
+            flist[i] = flist[i].split('//')
             food.append(flist[i][0])
             libra.append(flist[i][1])
   
@@ -829,8 +829,9 @@ def delete():
         con = sqlite3.connect(db)
         cur = con.cursor()
         L = request.form.getlist('checked')
+        print(L)
         for i in range(len(L)):
-            L1 = L[i].split('/')
+            L1 = L[i].split('//')
             print(L1)
             cur.execute('''DELETE FROM favourites WHERE food = ?
                         AND date = ?
