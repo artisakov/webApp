@@ -1023,13 +1023,27 @@ def email():
                                         'Пустое': lambda tags: '\n'.join(tags)})
         # Сон
         sleep1 = pd.DataFrame(L2, columns=['Дата', 'Время', 'Длительность, ч.'])
+
         sleep2 = sleep1.groupby(['Дата'
                                  ]).agg({'Время': lambda tags: '\n'.join(tags),
                                          'Длительность, ч.': lambda tags: '\n'.join(tags)})
         luck = pd.merge(left=activity2,
                         right=sleep2,
                         on="Дата", how='outer')
-        luck = luck.sort_values(by='Дата')               
+
+        luck["Дата1"] = pd.to_datetime(luck.index, format='%d.%m.%Y')                
+        luck = luck.sort_values(by="Дата1")
+        luck = luck.drop(["Дата1"], axis=1)
+
+        ga = luck.index[0]
+        gb = luck.index[len(luck.index)-1]
+        ranges = pd.date_range(start='08/25/2020', end='09/01/2020')
+        ranges1 = ranges.to_pydatetime()
+        new_ranges = []
+        for i in range(len(ranges1)):
+            new_ranges.append(ranges1[i].strftime('%d.%m.%Y'))
+
+        luck = luck.reindex(new_ranges)
 
         # Создаем общий Excel файл
         # можно добавить options={'strings_to_numbers': True} в writer
@@ -1407,12 +1421,18 @@ def email():
         for i in range(10):
             i1 = str(i+1)
             sheet1[f'A{i1}'].border = no_border
-
+        # Корректируем верхушки
         sheet1['A2'].fill = PatternFill("solid", fgColor="fafad2")
         sheet1['G2'].fill = PatternFill("solid", fgColor="fafad2")
         sheet1['A2'].border = thin_border
         sheet1['G2'].border = thin_border 
 
+        sheet1['A2'].font = Font(bold=True)
+        sheet1['G2'].font = Font(bold=True)
+        for i in range(4, len(luck['Время_x'])+4):
+            sheet1[f'B{i}'].font = Font(bold=False)
+
+        # Устанавливаем пароль на лист и сохраняем
         sheet1.protection.set_password('test')
         wb.save('app\\%s.xlsx' % session["username"])
         wb.close()
