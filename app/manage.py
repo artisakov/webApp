@@ -119,7 +119,7 @@ def search_page():
 @app.route('/searchlink/<string:search_string>')
 @login_required
 def searchlink(search_string):
-    # Работа бокового меню
+    # Работа селекторного меню "выбрать категорию"
     path = os.path.dirname(os.path.abspath(__file__))
     db = os.path.join(path, 'diacompanion.db')
     con = sqlite3.connect(db)
@@ -535,8 +535,8 @@ def add_activity():
             cur.execute("""INSERT INTO sleep (user_id,date,time,hour,type) VALUES(?,?,?,?,?)""",
                         (session['user_id'], date, time1, min1, type1))
         else:
-            cur.execute("""INSERT INTO activity (user_id,date,time,min,type) VALUES(?,?,?,?,?)""",
-                        (session['user_id'], date, time1, min1, type1))                            
+            cur.execute("""INSERT INTO activity (user_id,date,time,min,type,empty) VALUES(?,?,?,?,?,?)""",
+                        (session['user_id'], date, time1, min1, type1,' '))                            
         con.commit()
         con.close()
 
@@ -1345,7 +1345,7 @@ def email():
             for cell in row:
                 cell.alignment = cell.alignment.copy(wrapText=True)
                 cell.alignment = cell.alignment.copy(vertical='center')
-                cell.alignment = cell.alignment.copy(horizontal='center')
+                cell.alignment = cell.alignment.copy(horizontal='left')
 
         thin_border = Border(left=Side(style='hair'),
                              right=Side(style='hair'),
@@ -1372,11 +1372,6 @@ def email():
         sheet1['G2'] = 'Сон'
         sheet1.merge_cells('A1:H1')
 
-        for row in sheet1['D4:D%s' % length1]:
-            for cell in row:
-                cell.alignment = cell.alignment.copy(wrapText=True)
-                cell.alignment = cell.alignment.copy(vertical='top')
-                cell.alignment = cell.alignment.copy(horizontal='left')
 
         sheet1.column_dimensions['A'].width = 25
         sheet1.column_dimensions['B'].width = 13

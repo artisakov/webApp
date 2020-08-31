@@ -6,31 +6,32 @@ Login
 {% endblock %}
 
 {% block content %}
-
-<div class="container">
+<div style='display: flex; flex-direction: column; align-items: center; margin-top: 3rem;'>
+  <img src="static/images/favicon.svg" style='max-width: 150px; max-height: 150px;'>
+  <div class="container">
     <form class='form-signin' method="POST" action="/login">
-        <h2 class='form-signin-heading'>Пожалуйста, войдите</h2>
-        {{ form.hidden_tag() }}
-        {{ wtf.form_field(form.username) }}
-        {{ wtf.form_field(form.password) }}
-        {{ wtf.form_field(form.remember) }}
-        <button class='btn btn-lg btn-primary btn-block' type="submit">Вход</button>
-        <a href="{{ url_for('signup') }}" class="btn btn-danger btn-lg btn-block active" role="button" aria-pressed="true">Регистрация</a>
+      <h2 class='form-signin-heading'>Пожалуйста, войдите</h2>
+      {{ form.hidden_tag() }}
+      {{ wtf.form_field(form.username) }}
+      {{ wtf.form_field(form.password) }}
+      {{ wtf.form_field(form.remember) }}
+      <button class='btn btn-lg btn-primary btn-block' type="submit">Вход</button>
+      <a href="{{ url_for('signup') }}" class="btn btn-danger btn-lg btn-block active" role="button"
+        aria-pressed="true">Регистрация</a>
     </form>
+  </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
-  integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
-  crossorigin="anonymous"></script>
+  integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
-  integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
-  crossorigin="anonymous"></script>
+  integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 <style type="text/css">
-    .container {
-        margin: auto;
-        margin-top: 15rem;
-        max-width: 400px;
-    }
+  .container {
+    margin: auto;
+    margin-top: 1rem;
+    max-width: 365px;
+  }
 </style>
 {% endblock %}

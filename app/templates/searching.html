@@ -25,6 +25,23 @@
             }
         }
     </style>
+    <style type='text/css'>
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background-color: tomato;
+            border-radius: 1rem;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            border-radius: 1rem;
+            background-color: #00d2ff;
+            background-image: linear-gradient(to top, #00d2ff 0%, #3a7bd5 100%);
+            border-width: 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -36,7 +53,8 @@
                         data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Выбрать категорию
                     </button>
-                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <div class="dropdown-menu overflow-auto" aria-labelledby="dropdownMenuButton"
+                        style='height: 35rem;'>
                         <a class="dropdown-item"
                             href="{{ url_for('searchlink', search_string = 'Алкогольные напитки') }}">Алкогольные
                             напитки</a>
@@ -45,6 +63,79 @@
                             из картофеля, овощей и грибов</a>
                         <a class="dropdown-item"
                             href="{{ url_for('searchlink', search_string = 'Блюда из круп') }}">Блюда из круп</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Молочные продукты') }}">Молочные
+                            продукты</a>
+                        <a class="dropdown-item" href="{{ url_for('searchlink', search_string = 'Супы') }}">Супы</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Напитки') }}">Напитки</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Блюда из творога') }}">Блюда из
+                            творога</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Блюда из яиц') }}">Блюда из яиц</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Мясо и мясные продукты') }}">Мясо и
+                            мясные
+                            продукты</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Блюда из мяса и мясных продуктов') }}">Блюда
+                            из мяса и мясных продуктов</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Колбасы') }}">Колбасы</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Рыба и рыбные продукты') }}">Рыба и
+                            рыбные
+                            продукты</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Блюда из рыбы, морепродуктов и раков') }}">Блюда
+                            из рыбы, морепродуктов и раков</a>
+                        <a class="dropdown-item" href="{{ url_for('searchlink', search_string = 'Жиры, масла') }}">Жиры,
+                            масла</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Вспомогательные продукты') }}">Вспомогательные
+                            продукты</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Зерно, мука') }}">Зерно, мука</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Блюда из макаронных изделий') }}">Блюда
+                            из
+                            макароннных изделий</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Хлеб, выпечка') }}">Хлеб, выпечка</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Бобовые, орехи') }}">Бобовые, орехи</a>
+                        <a class="dropdown-item" href="{{ url_for('searchlink', search_string = 'Овощи') }}">Овощи</a>
+                        <a class="dropdown-item" href="{{ url_for('searchlink', search_string = 'Грибы') }}">Грибы</a>
+                        <a class="dropdown-item" href="{{ url_for('searchlink', search_string = 'Фрукты') }}">Фрукты</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Ягоды, варенье') }}">Ягоды, варенье</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Кондитерские изделия') }}">Кондитерские
+                            изделия</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Конфеты, шоколад') }}">Конфеты,
+                            шоколад</a>
+                        <a class="dropdown-item" href="{{ url_for('searchlink', search_string = 'Соусы') }}">Соусы</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Быстрое питание') }}">Быстрое питание</a>
+                        <a class="dropdown-item" href="{{ url_for('searchlink', search_string = 'Сыры') }}">Сыры</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Диабетические продукты') }}">Диабетические
+                            продукты</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Холодные блюда') }}">Холодные блюда</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Гарниры') }}">Гарниры</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Сладкие блюда') }}">Сладкие блюда</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Мучные изделия') }}">Мучные изделия</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Икра, морские продукты') }}">Икра, морские
+                            продукты</a>
+                        <a class="dropdown-item"
+                            href="{{ url_for('searchlink', search_string = 'Готовые завтраки') }}">Готовые завтраки</a>
                     </div>
                 </div>
             </div>
@@ -75,7 +166,6 @@
             </div>
         </nav>
     </header>
-
     <form method='POST' action='/favourites_add' id='favourites_add'>
         <div class="container mt-5 mb-5" id='pole' style='display: flex; flex-direction: row;'>
             <div class="container" style="max-width: 320px;">
@@ -121,7 +211,6 @@
         </div>
     </form>
 
-
     <script type="text/javascript">
         setInterval(function () {
             date = new Date(),
@@ -130,7 +219,7 @@
                 h = (h < 10) ? '0' + h : h,
                 m = (m < 10) ? '0' + m : m,
                 document.getElementById('timer').value = h + ':' + m;
-        }, 1000);
+        }, 15000);
     </script>
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
