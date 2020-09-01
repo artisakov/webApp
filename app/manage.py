@@ -31,13 +31,13 @@ app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 app.config['SQLALCHEMY_DATABASE_URI'] = \
     'sqlite:///diacompanion.db'
 app.config['TESTING'] = False
-app.config['MAIL_SERVER'] = 'smtp.yandex.ru'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USERNAME'] = 'dnewnike@yandex.ru'
-app.config['MAIL_PASSWORD'] = 'AjPR6kAs897jasb'
-app.config['MAIL_DEFAULT_SENDER'] = ('Еженедельник', 'dnewnike@yandex.ru')
+app.config['MAIL_USERNAME'] = 'teos.sicrets@gmail.com'
+app.config['MAIL_PASSWORD'] = 'ShurfLL1'
+app.config['MAIL_DEFAULT_SENDER'] = ('Еженедельник', 'teos.sicrets@gmail.com')
 app.config['MAIL_MAX_EMAILS'] = None
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_ASCII_ATTACHMENTS'] = False
@@ -1453,14 +1453,15 @@ def email():
         sheet1.protection.set_password('test')
         wb.save('app\\%s.xlsx' % session["username"])
         wb.close()
+
         # Отправляем по почте
-        msg = Message(recipients=[mail1])
+        msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
         msg.subject = "Никнейм пользователя: %s" % session["username"]
         msg.body = 'Электронный отчет'
         with app.open_resource('%s.xlsx' % session["username"]) as attach:
-            msg.attach('%s.xlsx' % session["username"], 'Sheet/xlsx',
+            msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
-        # mail.send(msg)
+        mail.send(msg)
 
     return redirect(url_for('lk'))
 
