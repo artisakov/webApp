@@ -1457,7 +1457,7 @@ def email():
 
         path = os.path.dirname(os.path.abspath(__file__))
         db = os.path.join(path, '%s.xlsx' % session["username"])
-        print(db)
+
         # Отправляем по почте
         msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
         msg.subject = "Никнейм пользователя: %s" % session["username"]
@@ -1465,7 +1465,7 @@ def email():
         with app.open_resource(db) as attach:
             msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
-        mail.send(msg)
+        #mail.send(msg)
 
     return redirect(url_for('lk'))
 
