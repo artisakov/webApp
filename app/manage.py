@@ -1455,11 +1455,14 @@ def email():
         wb.save('app\\%s.xlsx' % session["username"])
         wb.close()
 
+        path = os.path.dirname(os.path.abspath(__file__))
+        db = os.path.join(path, '%s.xlsx' % session["username"])
+        print(db)
         # Отправляем по почте
         msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
         msg.subject = "Никнейм пользователя: %s" % session["username"]
         msg.body = 'Электронный отчет'
-        with app.open_resource('/%s.xlsx' % session["username"]) as attach:
+        with app.open_resource(db) as attach:
             msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
         mail.send(msg)
