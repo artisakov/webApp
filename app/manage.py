@@ -1455,20 +1455,20 @@ def email():
         wb.save('app\\%s.xlsx' % session["username"])
         wb.close()
 
-    return redirect(url_for('lk'))
-    
-def send():
-    path = os.path.dirname(os.path.abspath(__file__))
-    db = os.path.join(path, '%s.xlsx' % session["username"])
+        path = os.path.dirname(os.path.abspath(__file__))
+        db = os.path.join(path, '%s.xlsx' % session["username"])
 
-    # Отправляем по почте
-    msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
-    msg.subject = "Никнейм пользователя: %s" % session["username"]
-    msg.body = 'Электронный отчет'
-    with app.open_resource(db) as attach:
-        msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
+        # Отправляем по почте
+        msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
+        msg.subject = "Никнейм пользователя: %s" % session["username"]
+        msg.body = 'Электронный отчет'
+        with app.open_resource(db) as attach:
+            msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
-    mail.send(msg)
+        #mail.send(msg)
+
+    return redirect(url_for('lk'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
