@@ -31,6 +31,7 @@ app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 app.config['SQLALCHEMY_DATABASE_URI'] = \
     'sqlite:///diacompanion.db'
 app.config['TESTING'] = False
+app.config['DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
