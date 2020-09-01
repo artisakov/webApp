@@ -1465,7 +1465,7 @@ def email():
         with app.open_resource('/app/app/artemtvi.xlsx') as attach:
             msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
-        #mail.send(msg)
+        mail.send(msg)
 
     return redirect(url_for('lk'))
 
