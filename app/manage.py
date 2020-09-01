@@ -34,10 +34,10 @@ app.config['TESTING'] = False
 app.config['DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = 'teos.sicrets@gmail.com'
-app.config['MAIL_PASSWORD'] = 'ShurfLL1'
+app.config['MAIL_PASSWORD'] = 'Artem1da'
 app.config['MAIL_DEFAULT_SENDER'] = ('Еженедельник', 'teos.sicrets@gmail.com')
 app.config['MAIL_MAX_EMAILS'] = None
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -1462,7 +1462,7 @@ def email():
         with app.open_resource('%s.xlsx' % session["username"]) as attach:
             msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
-        mail.send(msg)
+       #mail.send(msg)
 
     return redirect(url_for('lk'))
 
