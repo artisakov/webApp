@@ -1459,7 +1459,7 @@ def email():
         msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
         msg.subject = "Никнейм пользователя: %s" % session["username"]
         msg.body = 'Электронный отчет'
-        with app.open_resource('gg/app/%s.xlsx' % session["username"]) as attach:
+        with app.open_resource('/%s.xlsx' % session["username"]) as attach:
             msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
         mail.send(msg)
