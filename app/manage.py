@@ -520,9 +520,9 @@ def add_activity():
         elif type1 == '3':
             type1 = 'Спорт'
         elif type1 == '4':
-            type1 = 'Уборка'
+            type1 = 'Уборка в квартире'
         elif type1 == '5':
-            type1 = 'Работа в саду'
+            type1 = 'Работа в огороде'
         else:
             type1 = 'Сон'
         time1 = request.form['timer']
@@ -1033,11 +1033,18 @@ def email():
 
         luck["Дата1"] = pd.to_datetime(luck.index, format='%d.%m.%Y')                
         luck = luck.sort_values(by="Дата1")
+        start1 = luck.index[0]
+        end1 = luck.index[len(luck.index)-1]
+        start1 = datetime.datetime.strptime(start1, '%d.%m.%Y')
+        end1 = datetime.datetime.strptime(end1, '%d.%m.%Y')
+        start1 = start1.strftime('%m/%d/%Y')
+        end1 = end1.strftime('%m/%d/%Y')
+
         luck = luck.drop(["Дата1"], axis=1)
 
         ga = luck.index[0]
         gb = luck.index[len(luck.index)-1]
-        ranges = pd.date_range(start='08/25/2020', end='09/01/2020')
+        ranges = pd.date_range(start=start1, end=end1)
         ranges1 = ranges.to_pydatetime()
         new_ranges = []
         for i in range(len(ranges1)):
@@ -1369,11 +1376,11 @@ def email():
         no_border = Border(left=Side(border_style=None),
                              right=Side(border_style=None),
                              top=Side(border_style=None),
-                             bottom=Side(border_style=None))                                      
+                             bottom=Side(border_style=None))
 
         for row in sheet1.iter_rows():
             for cell in row:
-                cell.border = thin_border
+                cell.border = thin_border 
 
         merged_cells_range = sheet1.merged_cells.ranges
 
@@ -1386,12 +1393,11 @@ def email():
         sheet1['G2'] = 'Сон'
         sheet1.merge_cells('A1:H1')
 
-
         sheet1.column_dimensions['A'].width = 25
         sheet1.column_dimensions['B'].width = 13
         sheet1.column_dimensions['C'].width = 13
         sheet1.column_dimensions['D'].width = 20
-        sheet1.column_dimensions['E'].width = 13
+        sheet1.column_dimensions['E'].width = 25
         sheet1.column_dimensions['F'].width = 13
         sheet1.column_dimensions['G'].width = 13
         sheet1.column_dimensions['H'].width = 20
@@ -1414,12 +1420,12 @@ def email():
         sheet1['F3'].value = ''
         sheet1['C3'].value = 'Время'
         sheet1['G3'].value = 'Время'
-        for i in range(10):
-            i1 = str(i+1)
+        for i in range(3,len(luck['Длительность, ч.'])+4):
+            i1 = str(i)
             sheet1[f'F{i1}'].border = no_border
             
-        for i in range(10):
-            i1 = str(i+1)
+        for i in range(3,len(luck['Длительность, ч.'])+4):
+            i1 = str(i)
             sheet1[f'A{i1}'].border = no_border
         # Корректируем верхушки
         sheet1['A2'].fill = PatternFill("solid", fgColor="fafad2")
@@ -1431,6 +1437,17 @@ def email():
         sheet1['G2'].font = Font(bold=True)
         for i in range(4, len(luck['Время_x'])+4):
             sheet1[f'B{i}'].font = Font(bold=False)
+
+        # Закрашиваем строки через одну
+        k = 1
+        for abc in ['B','C','D','E','G','H']:
+            for i in range(4,len(luck['Длительность, ч.'])+4):
+                if k % 2 == 0:
+                    sheet1[f'{abc}{i}'].fill = PatternFill('solid', fgColor='f0f8ff')
+                    k = k + 1
+                else:
+                    sheet1[f'{abc}{i}'].fill = PatternFill('solid', fgColor='f0fff0')
+                    k = k + 1
 
         # Устанавливаем пароль на лист и сохраняем
         sheet1.protection.set_password('test')
