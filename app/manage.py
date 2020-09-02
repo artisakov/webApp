@@ -1452,7 +1452,7 @@ def email():
 
         # Устанавливаем пароль на лист и сохраняем
         sheet1.protection.set_password('test')
-        wb.save('table\\%s1.xlsx' % session["username"])
+        wb.save('table/%s1.xlsx' % session["username"])
         wb.close()
 
         #path = os.path.dirname(os.path.abspath(__file__))
@@ -1462,7 +1462,7 @@ def email():
         msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
         msg.subject = "Никнейм пользователя: %s" % session["username"]
         msg.body = 'Электронный отчет'
-        with app.open_resource('table\\%s1.xlsx' % session["username"]) as attach:
+        with app.open_resource('table/%s1.xlsx' % session["username"]) as attach:
             msg.attach('%s1.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
         mail.send(msg)
