@@ -1067,6 +1067,13 @@ def email():
                            startrow=0, startcol=1)                                            
         writer.close()
 
+        msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
+        msg.subject = "Никнейм пользователя: %s" % session["username"]
+        msg.body = 'Электронный отчет'
+        with app.open_resource('app/app/%s.xlsx' % session["username"]) as attach:
+            msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
+                       attach.read())
+        mail.send(msg)
         # Редактируем оформление приемов пищи
         wb = openpyxl.load_workbook('app\\%s.xlsx' % session["username"])
         sheet = wb['Приемы пищи']
@@ -1458,14 +1465,6 @@ def email():
         #path = os.path.dirname(os.path.abspath(__file__))
         #db = os.path.join(path, '%s1.xlsx' % session["username"])
 
-        # Отправляем по почте
-        msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
-        msg.subject = "Никнейм пользователя: %s" % session["username"]
-        msg.body = 'Электронный отчет'
-        with app.open_resource('app/app/table/%s1.xlsx' % session["username"]) as attach:
-            msg.attach('%s1.xlsx' % session["username"], 'sheet/xlsx',
-                       attach.read())
-        mail.send(msg)
 
     return redirect(url_for('lk'))
 
