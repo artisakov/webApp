@@ -1452,7 +1452,7 @@ def email():
 
         # Устанавливаем пароль на лист и сохраняем
         sheet1.protection.set_password('test')
-        wb.save('app/app/table/%s1.xlsx' % session["username"])
+        wb.save('app\\%s.xlsx' % session["username"])
         wb.close()
 
         #path = os.path.dirname(os.path.abspath(__file__))
