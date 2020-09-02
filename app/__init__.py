@@ -1463,7 +1463,7 @@ def email():
         msg.subject = "Никнейм пользователя: %s" % session["username"]
         msg.body = 'Электронный отчет'
         with app.open_resource(db) as attach:
-            msg.attach('app\\%s.xlsx' % session["username"], 'sheet/xlsx',
+            msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
         mail.send(msg)
 
