@@ -1452,20 +1452,20 @@ def email():
 
         # Устанавливаем пароль на лист и сохраняем
         sheet1.protection.set_password('test')
-        wb.save('app\\%s.xlsx' % session["username"])
+        wb.save('app\\%s1.xlsx' % session["username"])
         wb.close()
 
         path = os.path.dirname(os.path.abspath(__file__))
-        db = os.path.join(path, '%s.xlsx' % session["username"])
+        db = os.path.join(path, '%s1.xlsx' % session["username"])
 
         # Отправляем по почте
-        #msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
-        #msg.subject = "Никнейм пользователя: %s" % session["username"]
-        #msg.body = 'Электронный отчет'
-        #with app.open_resource(db) as attach:
-        #    msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
-        #               attach.read())
-        #mail.send(msg)
+        msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
+        msg.subject = "Никнейм пользователя: %s" % session["username"]
+        msg.body = 'Электронный отчет'
+        with app.open_resource(db) as attach:
+            msg.attach('%s1.xlsx' % session["username"], 'sheet/xlsx',
+                       attach.read())
+        mail.send(msg)
 
     return redirect(url_for('lk'))
 
