@@ -36,9 +36,9 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USERNAME'] = 'teos.sicrets@gmail.com'
+app.config['MAIL_USERNAME'] = 'pochtadiacomp@gmail.com'
 app.config['MAIL_PASSWORD'] = 'Artem1da'
-app.config['MAIL_DEFAULT_SENDER'] = ('Еженедельник', 'teos.sicrets@gmail.com')
+app.config['MAIL_DEFAULT_SENDER'] = ('Еженедельник', 'pochtadiacomp@gmail.com')
 app.config['MAIL_MAX_EMAILS'] = None
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_ASCII_ATTACHMENTS'] = False
@@ -1057,7 +1057,7 @@ def email():
         # можно добавить options={'strings_to_numbers': True} в writer
         # THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
         # my_file = os.path.join(THIS_FOLDER, '%s.xlsx' % session["username"])
-        writer = pd.ExcelWriter('app\\%s.xlsx' % session["username"],
+        writer = pd.ExcelWriter('%s.xlsx' % session["username"],
                                 engine='xlsxwriter',
                                 options={'strings_to_numbers': True,
                                          'default_date_format': 'dd/mm/yy'})
@@ -1068,7 +1068,7 @@ def email():
         writer.close()
 
         # Редактируем оформление приемов пищи
-        wb = openpyxl.load_workbook('app\\%s.xlsx' % session["username"])
+        wb = openpyxl.load_workbook('%s.xlsx' % session["username"])
         sheet = wb['Приемы пищи']
         ws = wb.active
         for row in ws.iter_rows():
@@ -1356,11 +1356,11 @@ def email():
             sheet[f'{a}3'].alignment = sheet[f'{a}3'].alignment.copy(horizontal = 'left')    
 
         ws.protection.set_password('test')
-        wb.save('app\\%s.xlsx' % session["username"])
+        wb.save('%s.xlsx' % session["username"])
         wb.close()
 
         # Форматируем физическую активность как надо
-        wb = openpyxl.load_workbook('app\\%s.xlsx' % session["username"])
+        wb = openpyxl.load_workbook('%s.xlsx' % session["username"])
         sheet1 = wb['Физическая активность']
 
         for row in sheet1.iter_rows():
@@ -1452,17 +1452,17 @@ def email():
 
         # Устанавливаем пароль на лист и сохраняем
         sheet1.protection.set_password('test')
-        wb.save('app\\%s.xlsx' % session["username"])
+        wb.save('%s.xlsx' % session["username"])
         wb.close()
 
         path = os.path.dirname(os.path.abspath(__file__))
         db = os.path.join(path, '%s.xlsx' % session["username"])
 
         # Отправляем по почте
-        msg = Message('ДиаКомпаньон', sender = 'teos.sicrets@gmail,com', recipients=mail1)
+        msg = Message('ДиаКомпаньон', sender = 'pochtadiacomp@gmail.com', recipients=mail1)
         msg.subject = "Никнейм пользователя: %s" % session["username"]
         msg.body = 'Электронный отчет'
-        with app.open_resource(db) as attach:
+        with app.open_resource('/home/ubuntu/flaskapp/webApp/%s.xlsx' % session["username"]) as attach:
             msg.attach('%s.xlsx' % session["username"], 'sheet/xlsx',
                        attach.read())
         mail.send(msg)
